@@ -323,3 +323,15 @@ fn test_matrix_vec() {
     let out = compile_and_verify("examples/fd_matrix_vec.c", "fd_mat4_vec4");
     assert_verified(&out);
 }
+
+#[test]
+fn test_iir_biquad() {
+    let out = compile_and_verify("examples/fd_iir_biquad.c", "fd_iir_biquad");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_pid() {
+    let out = compile_and_verify("examples/fd_pid.c", "fd_pid_step");
+    assert_verified(&out);
+}

@@ -47,6 +47,7 @@ pub struct DfgNode {
     pub id: NodeId,
     pub op: DfgOp,
     pub width: u32,
+    pub signed: bool,
     pub latency: u32,
     pub source_line: usize,
     pub source_name: String,

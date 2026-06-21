@@ -195,6 +195,23 @@ impl<'a> DfgBuilder<'a> {
             id,
             op,
             width,
+            signed: false,
+            latency,
+            source_line: line,
+            source_name: name.to_string(),
+        });
+        id
+    }
+
+    fn add_node_signed(&mut self, op: DfgOp, width: u32, signed: bool, line: usize, name: &str) -> NodeId {
+        let id = self.next_node;
+        self.next_node += 1;
+        let latency = op_latency(&op);
+        self.nodes.push(DfgNode {
+            id,
+            op,
+            width,
+            signed,
             latency,
             source_line: line,
             source_name: name.to_string(),
@@ -1142,6 +1159,17 @@ fn infer_width_from_type(node: Node, source: &str) -> u32 {
     } else {
         32
     }
+}
+
+fn is_signed_type(node: Node, source: &str) -> bool {
+    let text = node_text(node, source);
+    // Signed if: int/long/short/char without unsigned/u prefix
+    if text.contains("uint") || text.contains("ulong") || text.contains("ushort")
+        || text.contains("uchar") || text.contains("unsigned") {
+        return false;
+    }
+    text.contains("int") || text.contains("long") || text.contains("short")
+        || text.contains("char") || text.contains("sint")
 }
 
 fn const_width(val: u64, ctx_width: u32) -> u32 {

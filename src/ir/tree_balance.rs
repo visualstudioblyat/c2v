@@ -134,6 +134,7 @@ fn rewrite_as_balanced_tree(dfg: &mut Dfg, reduction: &Reduction) {
                 id: new_id,
                 op: reduction.op.clone(),
                 width: reduction.width,
+                signed: false,
                 latency: 1,
                 source_line: reduction.source_line,
                 source_name: format!("{op_name}_tree"),

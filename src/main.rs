@@ -2,6 +2,7 @@
 
 mod bind;
 mod emit;
+mod errors;
 mod ir;
 mod parse;
 mod passes;
