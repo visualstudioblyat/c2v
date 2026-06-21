@@ -4,3 +4,7 @@
 *.trace.json
 *.vcd
 /vis/entropy_vis
+*.vvp
+pd*
+pts
+abc.history
