@@ -8,6 +8,7 @@ mod passes;
 mod policy;
 mod schedule;
 mod standard;
+mod synth;
 mod target;
 pub mod types;
 mod verify;
@@ -83,6 +84,10 @@ struct Cli {
     /// List available target devices
     #[arg(long)]
     list_targets: bool,
+
+    /// Run Yosys synthesis on the output (requires yosys)
+    #[arg(long)]
+    synth: bool,
 }
 
 fn main() {
@@ -381,6 +386,23 @@ fn main() {
             }
         } else {
             eprintln!("\n  Unknown target: {target_name}. Use --list-targets to see available devices.");
+        }
+    }
+
+    // Yosys synthesis
+    if cli.synth {
+        let t0 = Instant::now();
+        let synth_target = cli.target.as_deref().unwrap_or("xilinx");
+        match synth::run_yosys_synth(out_path.to_str().unwrap(), synth_target) {
+            Ok(report) => {
+                eprintln!("[synth]     {} → {} cells{:>16}",
+                    report.target, report.cells, format!("✓  {:?}", t0.elapsed()));
+                eprintln!("            LUTs: {}  FFs: {}  DSPs: {}  BRAMs: {}",
+                    report.luts, report.ffs, report.dsps, report.brams);
+            }
+            Err(e) => {
+                eprintln!("[synth]     FAILED: {e}");
+            }
         }
     }
 }
