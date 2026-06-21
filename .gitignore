@@ -1,0 +1,6 @@
+/target
+*.v
+*.tb.v
+*.trace.json
+*.vcd
+/vis/entropy_vis
