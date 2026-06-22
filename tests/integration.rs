@@ -498,3 +498,88 @@ fn test_pack_schedule() {
     let out = compile_and_verify("examples/fd_pack_schedule.c", "fd_pack_compare");
     assert_verified(&out);
 }
+
+// ─── Synthesis tests ───
+
+#[test]
+fn test_synth_sha256() {
+    let out_path = unique_output("sha256_synth", ".v");
+    let (_, stderr, success) = c2v(&[
+        "examples/fd_hash_round.c", "-f", "fd_hash_round",
+        "--balance", "--synth", "-o", &out_path
+    ]);
+    let _ = std::fs::remove_file(&out_path);
+    assert!(success, "synth failed:\n{stderr}");
+    assert!(stderr.contains("synth_xilinx"), "should run xilinx synthesis");
+    assert!(stderr.contains("cells"), "should report cell count");
+}
+
+#[test]
+fn test_synth_fir() {
+    let out_path = unique_output("fir_synth", ".v");
+    let (_, stderr, success) = c2v(&[
+        "examples/fd_fir8_parallel.c", "-f", "fd_fir8_parallel",
+        "--synth", "-o", &out_path
+    ]);
+    let _ = std::fs::remove_file(&out_path);
+    assert!(success, "synth failed:\n{stderr}");
+    assert!(stderr.contains("cells"), "should report cell count");
+}
+
+// ─── AXI wrapper test ───
+
+#[test]
+fn test_axi_wrapper_generates() {
+    let out_path = unique_output("axi_test", ".v");
+    let (_, stderr, success) = c2v(&[
+        "examples/fd_add.c", "-f", "fd_add_compute",
+        "--axi", "-o", &out_path
+    ]);
+    let axi_path = out_path.replace(".v", ".axis.v");
+    let axi_exists = std::path::Path::new(&axi_path).exists();
+    let _ = std::fs::remove_file(&out_path);
+    let _ = std::fs::remove_file(&axi_path);
+    assert!(success, "axi gen failed:\n{stderr}");
+    assert!(axi_exists, "AXI wrapper file should be generated");
+}
+
+// ─── Estimate vs Yosys calibration ───
+
+#[test]
+fn test_estimate_vs_synth() {
+    let out_path = unique_output("calib", ".v");
+    let (_, stderr, success) = c2v(&[
+        "examples/fd_hash_round.c", "-f", "fd_hash_round",
+        "--balance", "--synth", "-T", "xc7a35t", "-o", &out_path
+    ]);
+    let _ = std::fs::remove_file(&out_path);
+    assert!(success, "failed:\n{stderr}");
+
+    // Extract estimated LUTs
+    let est_luts: u32 = stderr.lines()
+        .find(|l| l.contains("Area est"))
+        .and_then(|l| l.split('~').nth(1))
+        .and_then(|s| s.trim().split_whitespace().next())
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(0);
+
+    // Extract Yosys LUTs
+    let synth_luts: u32 = stderr.lines()
+        .find(|l| l.contains("LUTs:") && l.contains("FFs:"))
+        .and_then(|l| l.split("LUTs:").nth(1))
+        .and_then(|s| s.trim().split_whitespace().next())
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(0);
+
+    assert!(est_luts > 0, "estimated LUTs should be > 0");
+    assert!(synth_luts > 0, "synth LUTs should be > 0");
+
+    // Estimate should be within 3x of actual (generous for now)
+    let ratio = if synth_luts > est_luts {
+        synth_luts as f64 / est_luts as f64
+    } else {
+        est_luts as f64 / synth_luts as f64
+    };
+    assert!(ratio < 3.0,
+        "estimate ({est_luts}) vs synth ({synth_luts}) ratio {ratio:.1} exceeds 3x");
+}
