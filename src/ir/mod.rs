@@ -1,6 +1,7 @@
 mod build;
 pub mod dot;
 pub mod entropy;
+pub mod memory;
 pub mod transform;
 pub mod tree_balance;
 pub mod validate;
