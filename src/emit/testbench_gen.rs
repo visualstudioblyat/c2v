@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use crate::ir::{BoundDfg, DfgOp};
+use crate::ir::BoundDfg;
 
 pub fn generate_waveform_testbench(bound: &BoundDfg) -> String {
     let dfg = &bound.scheduled.dfg;

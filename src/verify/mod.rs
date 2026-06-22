@@ -4,7 +4,7 @@ use std::fmt::Write;
 
 use crate::ir::{BoundDfg, DfgOp};
 
-pub fn generate_testbench(bound: &BoundDfg, source: &str) -> String {
+pub fn generate_testbench(bound: &BoundDfg, _source: &str) -> String {
     let dfg = &bound.scheduled.dfg;
     let mut tb = String::with_capacity(8192);
     let mod_name = verilog_safe(&dfg.name);

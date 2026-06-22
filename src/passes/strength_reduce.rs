@@ -1,4 +1,4 @@
-use crate::ir::{Dfg, DfgEdge, DfgOp};
+use crate::ir::{Dfg, DfgOp};
 use super::{Pass, PassResult};
 
 pub struct StrengthReduction;
@@ -23,7 +23,7 @@ impl Pass for StrengthReduction {
                 let (a, b) = (inputs[0], inputs[1]);
                 let a_const = const_val(a, &dfg);
                 let b_const = const_val(b, &dfg);
-                let width = dfg.nodes[id].width;
+                let _width = dfg.nodes[id].width;
 
                 match &dfg.nodes[id].op {
                     // x * 2^N → x << N

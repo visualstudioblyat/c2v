@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use good_lp::{constraint, variable, variables, Expression, ProblemVariables, Solution, SolverModel, default_solver};
+use good_lp::{constraint, variable, ProblemVariables, Solution, SolverModel, default_solver};
 
 use crate::ir::{Dfg, DfgOp, NodeId, ScheduledDfg};
 use super::ResourceConstraints;
@@ -160,7 +160,7 @@ fn compute_asap(dfg: &Dfg, predecessors: &HashMap<NodeId, Vec<NodeId>>) -> HashM
 
 fn compute_alap(
     dfg: &Dfg,
-    predecessors: &HashMap<NodeId, Vec<NodeId>>,
+    _predecessors: &HashMap<NodeId, Vec<NodeId>>,
     asap: &HashMap<NodeId, u32>,
 ) -> HashMap<NodeId, u32> {
     let max_asap = asap.values().copied().max().unwrap_or(1);

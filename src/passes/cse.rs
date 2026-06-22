@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ir::{Dfg, DfgOp, DfgEdge};
+use crate::ir::{Dfg, DfgOp};
 use super::{Pass, PassResult};
 
 pub struct CommonSubexprElimination;

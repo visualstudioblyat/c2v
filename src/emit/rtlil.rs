@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use crate::ir::{BoundDfg, DfgOp, NodeId};
-use super::{build_signal_names, get_inputs, verilog_safe_name, width_decl};
+use super::{build_signal_names, get_inputs, verilog_safe_name};
 
 pub fn emit_rtlil(bound: &BoundDfg) -> String {
     let mut out = String::with_capacity(8192);

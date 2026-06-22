@@ -4,7 +4,6 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-use crate::ir::{NodeId, ResourceId};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Policy {

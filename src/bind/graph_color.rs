@@ -28,7 +28,7 @@ pub fn bind_graph_coloring(scheduled: ScheduledDfg) -> BoundDfg {
     let mut bindings: HashMap<NodeId, ResourceId> = HashMap::new();
     let mut next_id: ResourceId = 0;
 
-    for (type_key, type_ops) in &by_type {
+    for (_type_key, type_ops) in &by_type {
         // Build interference graph for this resource type
         let n = type_ops.len();
         let mut adj: Vec<HashSet<usize>> = vec![HashSet::new(); n];

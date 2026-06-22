@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Write;
 
 use crate::ir::{BoundDfg, DfgOp, NodeId};
-use super::{get_inputs, operand_ref, verilog_safe_name, width_decl, build_signal_names, verilog_binop, state_width};
+use super::{get_inputs, verilog_safe_name, width_decl, build_signal_names, verilog_binop};
 
 pub fn emit_pipelined(bound: &BoundDfg) -> String {
     let mut out = String::with_capacity(16384);

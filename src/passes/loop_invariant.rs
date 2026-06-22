@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 
 use crate::ir::{Dfg, DfgOp, NodeId};
 use super::{Pass, PassResult};

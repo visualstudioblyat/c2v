@@ -188,7 +188,7 @@ fn estimate_log2_topo_sorts(
     dfg: &Dfg,
     ops: &[NodeId],
     preds: &HashMap<NodeId, Vec<NodeId>>,
-    depth: u32,
+    _depth: u32,
 ) -> f64 {
     // Level-based approximation:
     // Partition ops into levels by ASAP time.
@@ -288,7 +288,7 @@ fn count_chain_leaves(dfg: &Dfg, node_id: NodeId, op: &DfgOp, count: &mut u32) {
     }
 }
 
-fn compute_serial_depth(chains: &[ReductionChain], base_depth: u32) -> u32 {
+fn compute_serial_depth(_chains: &[ReductionChain], base_depth: u32) -> u32 {
     base_depth
 }
 
