@@ -1,4 +1,5 @@
 pub mod pipeline_tb;
+pub mod reference;
 
 use std::fmt::Write;
 
@@ -51,11 +52,10 @@ pub fn generate_testbench(bound: &BoundDfg, _source: &str) -> String {
 
     writeln!(tb).unwrap();
 
-    // Reference model
-    if let Some(out_port) = dfg.outputs.first() {
-        writeln!(tb, "    reg [{w}:0] expected;", w = out_port.width - 1).unwrap();
-        writeln!(tb).unwrap();
-    }
+    // Procedural reference model — one variable per DFG node
+    let (ref_decls, _) = reference::emit_procedural_reference(dfg);
+    write!(tb, "{ref_decls}").unwrap();
+    writeln!(tb).unwrap();
 
     // Clock
     writeln!(tb, "    always #5 clk = ~clk;").unwrap();
@@ -81,28 +81,9 @@ pub fn generate_testbench(bound: &BoundDfg, _source: &str) -> String {
         }
     }
 
-    // Populate reference arrays each iteration
-    for node in &dfg.nodes {
-        if let DfgOp::Store { array } = &node.op {
-            let inputs: Vec<u32> = dfg.edges.iter()
-                .filter(|e| e.to == node.id && e.width > 0)
-                .map(|e| e.from).collect();
-            if inputs.len() >= 2 {
-                let name = verilog_safe(array);
-                let idx_expr = expr_for_node(inputs[0], dfg);
-                let val_expr = expr_for_node(inputs[1], dfg);
-                writeln!(tb, "            ref_{name}[{idx_expr}] = {val_expr};").unwrap();
-            }
-        }
-    }
-
-    writeln!(tb).unwrap();
-    writeln!(
-        tb,
-        "            expected = {};",
-        build_reference_expr(bound)
-    )
-    .unwrap();
+    // Compute reference result using procedural model
+    let (_, ref_body) = reference::emit_procedural_reference(dfg);
+    write!(tb, "{ref_body}").unwrap();
     writeln!(tb, "            start = 1;").unwrap();
     writeln!(tb, "            @(posedge clk);").unwrap();
     writeln!(tb, "            start = 0;").unwrap();
@@ -114,8 +95,8 @@ pub fn generate_testbench(bound: &BoundDfg, _source: &str) -> String {
 
     if let Some(out_port) = dfg.outputs.first() {
         let n = verilog_safe(&out_port.name);
-        writeln!(tb, "            if ({n} !== expected) begin").unwrap();
-        writeln!(tb, "                $display(\"MISMATCH at i=%0d: got=%0h expected=%0h\", i, {n}, expected);").unwrap();
+        writeln!(tb, "            if ({n} !== ref_output) begin").unwrap();
+        writeln!(tb, "                $display(\"MISMATCH at i=%0d: got=%0h expected=%0h\", i, {n}, ref_output);").unwrap();
         writeln!(tb, "                errors = errors + 1;").unwrap();
         writeln!(tb, "            end").unwrap();
     }

@@ -426,3 +426,9 @@ fn test_aes_full_round() {
     let out = compile_and_verify("examples/fd_aes_round.c", "fd_aes_round");
     assert_verified(&out);
 }
+
+#[test]
+fn test_sha1_multi() {
+    let out = compile_and_verify("examples/fd_sha1_multi.c", "fd_sha1_multi");
+    assert_verified(&out);
+}
