@@ -7,23 +7,24 @@ typedef unsigned int uint;
 uint
 fd_arbiter_rr4( uint req, uint last_grant ) {
   uint grant = 0;
-  uint next_last = last_grant;
+  uint r = req & 0xF;
+  uint next_last = last_grant & 3;
 
   /* Round-robin: start from the requester after last grant */
-  uint start = (last_grant + 1) & 3;
+  uint start = (next_last + 1) & 3;
 
-  if( (req >> start) & 1 ) {
+  if( (r >> start) & 1 ) {
     grant = 1 << start;
     next_last = start;
-  } else if( (req >> ((start + 1) & 3)) & 1 ) {
+  } else if( (r >> ((start + 1) & 3)) & 1 ) {
     uint idx = (start + 1) & 3;
     grant = 1 << idx;
     next_last = idx;
-  } else if( (req >> ((start + 2) & 3)) & 1 ) {
+  } else if( (r >> ((start + 2) & 3)) & 1 ) {
     uint idx = (start + 2) & 3;
     grant = 1 << idx;
     next_last = idx;
-  } else if( (req >> ((start + 3) & 3)) & 1 ) {
+  } else if( (r >> ((start + 3) & 3)) & 1 ) {
     uint idx = (start + 3) & 3;
     grant = 1 << idx;
     next_last = idx;

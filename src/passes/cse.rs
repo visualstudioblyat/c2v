@@ -65,12 +65,11 @@ impl Pass for CommonSubexprElimination {
             dfg.nodes[dead as usize].latency = 0;
         }
 
-        // Remove duplicate edges
-        let mut seen: HashMap<(u32, u32), bool> = HashMap::new();
+        // Remove duplicate edges ONLY for edges to Nop'd nodes
+        // (not for self-edges like x+x after CSE merging)
         dfg.edges.retain(|e| {
-            let key = (e.from, e.to);
-            if seen.contains_key(&key) { false }
-            else { seen.insert(key, true); true }
+            let to_node = &dfg.nodes[e.to as usize];
+            !matches!(&to_node.op, DfgOp::Nop)
         });
 
         Ok(dfg)

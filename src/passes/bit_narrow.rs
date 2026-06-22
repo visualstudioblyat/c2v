@@ -38,11 +38,19 @@ impl Pass for BitNarrowing {
             }
         }
 
-        // Apply narrowing
+        // Only narrow if the node has exactly ONE consumer (the AND)
+        let mut consumer_count: HashMap<NodeId, usize> = HashMap::new();
+        for edge in &dfg.edges {
+            *consumer_count.entry(edge.from).or_insert(0) += 1;
+        }
+
         for (&node_id, &narrow_width) in &mask_widths {
-            let node = &mut dfg.nodes[node_id as usize];
-            if narrow_width < node.width && narrow_width > 0 {
-                node.width = narrow_width;
+            let consumers = consumer_count.get(&node_id).copied().unwrap_or(0);
+            if consumers <= 1 {
+                let node = &mut dfg.nodes[node_id as usize];
+                if narrow_width < node.width && narrow_width > 0 {
+                    node.width = narrow_width;
+                }
             }
         }
 
