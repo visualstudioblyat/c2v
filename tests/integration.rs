@@ -372,3 +372,33 @@ fn test_sha256_compress() {
     let out = compile_with_balance("examples/fd_sha256_compress.c", "fd_sha256_compress4");
     assert_verified(&out);
 }
+
+#[test]
+fn test_uart_rx() {
+    let out = compile_and_verify("examples/fd_uart_rx.c", "fd_uart_rx_tick");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_huffman() {
+    let out = compile_and_verify("examples/fd_huffman.c", "fd_huffman_decode");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_relu() {
+    let out = compile_with_balance("examples/fd_relu.c", "fd_relu_linear4");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_pwm() {
+    let out = compile_and_verify("examples/fd_pwm.c", "fd_pwm_tick");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_convolution_balanced() {
+    let out = compile_with_balance("examples/fd_convolution.c", "fd_conv3x3");
+    assert_verified(&out);
+}

@@ -1,4 +1,5 @@
 pub mod pipeline;
+pub mod rtlil;
 pub mod testbench_gen;
 
 use std::collections::HashMap;
