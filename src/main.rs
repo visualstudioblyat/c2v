@@ -107,6 +107,10 @@ struct Cli {
     /// Generate VCD waveform testbench
     #[arg(long)]
     wave: bool,
+
+    /// Use graph coloring for resource binding (better sharing)
+    #[arg(long)]
+    graph_color: bool,
 }
 
 fn main() {
@@ -309,9 +313,14 @@ fn main() {
 
     // Phase 5: Bind
     let t0 = Instant::now();
-    let bound = bind::bind_greedy(scheduled);
+    let bound = if cli.graph_color {
+        bind::graph_color::bind_graph_coloring(scheduled)
+    } else {
+        bind::bind_greedy(scheduled)
+    };
+    let bind_kind = if cli.graph_color { "graph-color" } else { "greedy" };
     let n_resources = bound.resources.len();
-    eprintln!("[bind]      {n_resources} resources{:>26}", format!("✓  {:?}", t0.elapsed()));
+    eprintln!("[bind]      {n_resources} resources ({bind_kind}){:>14}", format!("✓  {:?}", t0.elapsed()));
 
     // Lint
     let lint_warnings = lint::lint_dfg(&bound);

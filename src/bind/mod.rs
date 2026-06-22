@@ -1,3 +1,5 @@
+pub mod graph_color;
+
 use std::collections::HashMap;
 
 use crate::ir::{BoundDfg, DfgOp, NodeId, Resource, ResourceId, ResourceKind, ScheduledDfg};
