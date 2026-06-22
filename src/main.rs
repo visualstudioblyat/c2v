@@ -260,6 +260,8 @@ fn main() {
     pipeline.add(Box::new(passes::mux_simplify::MuxSimplification));
     pipeline.add(Box::new(passes::cse::CommonSubexprElimination));
     pipeline.add(Box::new(passes::loop_invariant::LoopInvariantCodeMotion));
+    pipeline.add(Box::new(passes::chain_combine::ChainCombine));
+    pipeline.add(Box::new(passes::duplicate_store::DuplicateStoreElimination));
     pipeline.add(Box::new(passes::dead_node::DeadNodeElimination));
     pipeline.add(Box::new(passes::width_narrow::WidthNarrowing));
 

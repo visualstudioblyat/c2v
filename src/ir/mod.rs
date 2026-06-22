@@ -1,6 +1,7 @@
 mod build;
 pub mod entropy;
 pub mod tree_balance;
+pub mod validate;
 
 pub use build::build_dfg;
 

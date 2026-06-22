@@ -402,3 +402,9 @@ fn test_convolution_balanced() {
     let out = compile_with_balance("examples/fd_convolution.c", "fd_conv3x3");
     assert_verified(&out);
 }
+
+#[test]
+fn test_i2c_master() {
+    let out = compile_and_verify("examples/fd_i2c_master.c", "fd_i2c_shift_byte");
+    assert_verified(&out);
+}

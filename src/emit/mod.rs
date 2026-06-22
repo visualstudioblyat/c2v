@@ -1,3 +1,4 @@
+pub mod constraints;
 pub mod pipeline;
 pub mod rtlil;
 pub mod testbench_gen;
