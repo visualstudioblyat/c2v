@@ -1,3 +1,4 @@
+pub mod avalon_st;
 pub mod axi_stream;
 pub mod cocotb;
 pub mod constraints;
@@ -7,6 +8,7 @@ pub mod report;
 pub mod rtlil;
 pub mod testbench_gen;
 pub mod vivado;
+pub mod wishbone;
 pub mod yosys_script;
 
 use std::collections::HashMap;
