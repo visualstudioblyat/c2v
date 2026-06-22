@@ -298,6 +298,19 @@ impl<'a> DfgBuilder<'a> {
             }
             "if_statement" => self.build_if(node, source),
             "while_statement" => self.build_while(node, source),
+            "switch_statement" => self.build_switch(node, source),
+            "labeled_statement" => {
+                // case X: stmt — just build the inner statement
+                let mut cursor = node.walk();
+                for child in node.children(&mut cursor) {
+                    if child.kind() != "case" && child.kind() != "default"
+                        && child.kind() != ":" && !child.kind().contains("literal") {
+                        self.build_statement(child, source)?;
+                    }
+                }
+                Ok(())
+            }
+            "break_statement" => Ok(()), // breaks handled by switch builder
             _ => Ok(()),
         }
     }
@@ -442,6 +455,142 @@ impl<'a> DfgBuilder<'a> {
             line,
             "while loops cannot be synthesized — use for(int i=0; i<N; i++) with constant bounds".to_string(),
         ))
+    }
+
+    fn build_switch(&mut self, node: Node, source: &str) -> Result<(), DfgBuildError> {
+        let line = node.start_position().row + 1;
+
+        // switch(expr) { case A: ...; break; case B: ...; break; default: ...; }
+        // → chain of if/else: if(expr==A) {...} else if(expr==B) {...} else {...}
+        let cond_node = node.child_by_field_name("condition");
+        let body_node = node.child_by_field_name("body");
+
+        let cond_node = match cond_node {
+            Some(c) => c,
+            None => return Err(DfgBuildError::Unsupported(line, "switch without condition".to_string())),
+        };
+
+        // Build the switch expression
+        let cond_inner = if cond_node.kind() == "parenthesized_expression" {
+            let mut cursor = cond_node.walk();
+            cond_node.children(&mut cursor)
+                .find(|c| c.kind() != "(" && c.kind() != ")")
+                .unwrap_or(cond_node)
+        } else {
+            cond_node
+        };
+        let switch_val = self.build_expr(cond_inner, source, 32)?;
+
+        let body = match body_node {
+            Some(b) => b,
+            None => return Ok(()),
+        };
+
+        // Collect cases: (value_or_default, statements)
+        struct CaseArm<'a> {
+            value: Option<i64>,
+            stmts: Vec<tree_sitter::Node<'a>>,
+        }
+
+        let mut arms: Vec<CaseArm> = Vec::new();
+        let mut current_arm: Option<CaseArm> = None;
+
+        let mut cursor = body.walk();
+        for child in body.children(&mut cursor) {
+            match child.kind() {
+                "case_statement" => {
+                    if let Some(arm) = current_arm.take() {
+                        arms.push(arm);
+                    }
+                    // Extract case value
+                    let mut sc = child.walk();
+                    let mut case_val = None;
+                    let mut stmts = Vec::new();
+                    for sc_child in child.children(&mut sc) {
+                        if sc_child.kind() == "number_literal" {
+                            case_val = Some(parse_number(node_text(sc_child, source)) as i64);
+                        } else if sc_child.kind() != "case" && sc_child.kind() != ":"
+                            && sc_child.kind() != "break_statement" {
+                            stmts.push(sc_child);
+                        }
+                    }
+                    current_arm = Some(CaseArm { value: case_val, stmts });
+                }
+                "default_statement" => {
+                    if let Some(arm) = current_arm.take() {
+                        arms.push(arm);
+                    }
+                    let mut sc = child.walk();
+                    let mut stmts = Vec::new();
+                    for sc_child in child.children(&mut sc) {
+                        if sc_child.kind() != "default" && sc_child.kind() != ":"
+                            && sc_child.kind() != "break_statement" {
+                            stmts.push(sc_child);
+                        }
+                    }
+                    current_arm = Some(CaseArm { value: None, stmts });
+                }
+                _ => {
+                    if let Some(ref mut arm) = current_arm {
+                        if child.kind() != "break_statement" && child.kind() != "{" && child.kind() != "}" {
+                            arm.stmts.push(child);
+                        }
+                    }
+                }
+            }
+        }
+        if let Some(arm) = current_arm.take() {
+            arms.push(arm);
+        }
+
+        // Build as cascaded mux: for each case, snapshot vars, build body,
+        // then merge with condition check
+        let vars_before = self.vars.clone();
+        let mut result_vars = vars_before.clone();
+
+        for arm in &arms {
+            let vars_snapshot = result_vars.clone();
+            self.vars = vars_snapshot.clone();
+
+            // Build this arm's statements
+            for stmt in &arm.stmts {
+                self.build_statement(*stmt, source)?;
+            }
+            let vars_after = self.vars.clone();
+
+            if let Some(case_val) = arm.value {
+                // case VALUE: — insert mux for changed vars
+                let width = self.nodes[switch_val as usize].width;
+                let const_id = self.add_node(
+                    DfgOp::Const(case_val as u64), width, line,
+                    &format!("c_{case_val}"),
+                );
+                let eq_id = self.add_node(DfgOp::Eq, 1, line, "eq");
+                self.add_edge(switch_val, eq_id, width);
+                self.add_edge(const_id, eq_id, width);
+
+                for (var, &new_id) in &vars_after {
+                    let old_id = vars_snapshot.get(var).copied().unwrap_or(new_id);
+                    if new_id != old_id {
+                        let w = self.nodes[new_id as usize].width
+                            .max(self.nodes[old_id as usize].width);
+                        let mux_id = self.add_node(DfgOp::Mux, w, line, "mux");
+                        self.add_edge(eq_id, mux_id, 1);
+                        self.add_edge(new_id, mux_id, w);
+                        self.add_edge(old_id, mux_id, w);
+                        result_vars.insert(var.clone(), mux_id);
+                    }
+                }
+            } else {
+                // default: — just use the values directly
+                for (var, &new_id) in &vars_after {
+                    result_vars.insert(var.clone(), new_id);
+                }
+            }
+        }
+
+        self.vars = result_vars;
+        Ok(())
     }
 
     fn build_declaration(&mut self, node: Node, source: &str) -> Result<(), DfgBuildError> {

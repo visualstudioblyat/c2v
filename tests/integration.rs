@@ -408,3 +408,21 @@ fn test_i2c_master() {
     let out = compile_and_verify("examples/fd_i2c_master.c", "fd_i2c_shift_byte");
     assert_verified(&out);
 }
+
+#[test]
+fn test_opcode_switch() {
+    let out = compile_and_verify("examples/fd_opcode.c", "fd_opcode_exec");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_sha1_round() {
+    let out = compile_and_verify("examples/fd_sha1_round.c", "fd_sha1_round");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_aes_full_round() {
+    let out = compile_and_verify("examples/fd_aes_round.c", "fd_aes_round");
+    assert_verified(&out);
+}
