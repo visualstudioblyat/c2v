@@ -474,3 +474,27 @@ fn test_chacha_qr() {
     let out = compile_and_verify("examples/fd_chacha_qr.c", "fd_chacha_quarter_round");
     assert_verified(&out);
 }
+
+#[test]
+fn test_base58() {
+    let out = compile_and_verify("examples/fd_base58.c", "fd_base58_digit");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_ed25519_reduce() {
+    let out = compile_and_verify("examples/fd_ed25519_reduce.c", "fd_field_reduce");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_dedup_hash() {
+    let out = compile_and_verify("examples/fd_dedup_hash.c", "fd_dedup_check");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_pack_schedule() {
+    let out = compile_and_verify("examples/fd_pack_schedule.c", "fd_pack_compare");
+    assert_verified(&out);
+}
