@@ -112,6 +112,10 @@ struct Cli {
     /// Use graph coloring for resource binding (better sharing)
     #[arg(long)]
     graph_color: bool,
+
+    /// Generate AXI-Stream wrapper
+    #[arg(long)]
+    axi: bool,
 }
 
 fn main() {
@@ -353,7 +357,16 @@ fn main() {
     });
     eprintln!("[emit]      {} ({v_lines} lines, {mode}){:>6}", out_path.display(), format!("✓  {:?}", t0.elapsed()));
 
-    // Phase 6.5: Waveform testbench
+    // Phase 6.5: AXI-Stream wrapper
+    if cli.axi {
+        let t0 = Instant::now();
+        let axi_wrapper = emit::axi_stream::emit_axi_stream_wrapper(&bound);
+        let axi_path = out_path.with_extension("axis.v");
+        fs::write(&axi_path, &axi_wrapper).unwrap();
+        eprintln!("[axi]       {}{:>30}", axi_path.display(), format!("✓  {:?}", t0.elapsed()));
+    }
+
+    // Phase 6.6: Waveform testbench
     if cli.wave {
         let wave_tb = emit::testbench_gen::generate_waveform_testbench(&bound);
         let wave_path = out_path.with_extension("wave.v");

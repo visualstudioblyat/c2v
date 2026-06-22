@@ -164,6 +164,7 @@ pub fn emit_axi_stream_wrapper( bound: &BoundDfg ) -> String {
     writeln!( out, "                end" ).unwrap();
 
     writeln!( out, "                S_LOAD: begin" ).unwrap();
+    writeln!( out, "                    s_axis_tready <= 1'b1;" ).unwrap();
     writeln!( out, "                    if (s_axis_tvalid) begin" ).unwrap();
     writeln!( out, "                        s_axis_tready <= 1'b0;" ).unwrap();
     writeln!( out, "                        core_start    <= 1'b1;" ).unwrap();
@@ -172,9 +173,11 @@ pub fn emit_axi_stream_wrapper( bound: &BoundDfg ) -> String {
     writeln!( out, "                    end" ).unwrap();
     writeln!( out, "                end" ).unwrap();
 
+    let min_wait = 3; /* minimum cycles before checking done — ensures core has started */
     writeln!( out, "                S_RUN: begin" ).unwrap();
-    writeln!( out, "                    core_start <= 1'b0;" ).unwrap();
-    writeln!( out, "                    if (core_done) begin" ).unwrap();
+    writeln!( out, "                    core_start   <= 1'b0;" ).unwrap();
+    writeln!( out, "                    wait_counter <= wait_counter + 1;" ).unwrap();
+    writeln!( out, "                    if (wait_counter >= {min_wait} && core_done) begin" ).unwrap();
     writeln!( out, "                        m_axis_tdata  <= packed_result;" ).unwrap();
     writeln!( out, "                        m_axis_tvalid <= 1'b1;" ).unwrap();
     writeln!( out, "                        axi_state     <= S_EMIT;" ).unwrap();
@@ -184,7 +187,8 @@ pub fn emit_axi_stream_wrapper( bound: &BoundDfg ) -> String {
     writeln!( out, "                S_EMIT: begin" ).unwrap();
     writeln!( out, "                    if (m_axis_tready) begin" ).unwrap();
     writeln!( out, "                        m_axis_tvalid <= 1'b0;" ).unwrap();
-    writeln!( out, "                        axi_state     <= S_IDLE;" ).unwrap();
+    writeln!( out, "                        s_axis_tready <= 1'b1;" ).unwrap();
+    writeln!( out, "                        axi_state     <= S_LOAD;" ).unwrap();
     writeln!( out, "                    end" ).unwrap();
     writeln!( out, "                end" ).unwrap();
 
