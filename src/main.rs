@@ -23,8 +23,8 @@ use clap::Parser;
 #[derive(Parser)]
 #[command(name = "c2v", version, about = "Firedancer-style C to Verilog")]
 struct Cli {
-    /// Input C source file
-    input: Option<PathBuf>,
+    /// Input C source file(s)
+    input: Vec<PathBuf>,
 
     /// Output Verilog file
     #[arg(short, long)]
@@ -89,6 +89,10 @@ struct Cli {
     /// Run Yosys synthesis on the output (requires yosys)
     #[arg(long)]
     synth: bool,
+
+    /// ML policy file (JSON) for schedule/bind overrides
+    #[arg(long, short = 'P')]
+    policy: Option<PathBuf>,
 }
 
 fn main() {
@@ -102,38 +106,54 @@ fn main() {
         return;
     }
 
-    let input = cli.input.unwrap_or_else(|| {
+    if cli.input.is_empty() {
         eprintln!("c2v: no input file specified");
         std::process::exit(1);
-    });
+    }
+    let input = cli.input[0].clone();
 
     let t_start = Instant::now();
 
     let source = if cli.preprocess {
-        let mut cmd = std::process::Command::new("cc");
-        cmd.args(["-E", "-P", "-nostdinc"]);
-        for d in &cli.define {
-            cmd.arg(format!("-D{d}"));
+        let mut combined = String::new();
+        for path in &cli.input {
+            let mut cmd = std::process::Command::new("cc");
+            cmd.args(["-E", "-P", "-nostdinc"]);
+            for d in &cli.define {
+                cmd.arg(format!("-D{d}"));
+            }
+            cmd.arg(path.to_str().unwrap());
+            let output = cmd.output().unwrap_or_else(|e| {
+                eprintln!("c2v: failed to run preprocessor: {e}");
+                std::process::exit(1);
+            });
+            if !output.status.success() {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                eprintln!("c2v: preprocessor failed on {}: {stderr}", path.display());
+                std::process::exit(1);
+            }
+            combined.push_str(&String::from_utf8_lossy(&output.stdout));
+            combined.push('\n');
         }
-        cmd.arg(input.to_str().unwrap());
-        let output = cmd.output().unwrap_or_else(|e| {
-            eprintln!("c2v: failed to run preprocessor: {e}");
-            std::process::exit(1);
-        });
-        if !output.status.success() {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            eprintln!("c2v: preprocessor failed:\n{stderr}");
-            std::process::exit(1);
-        }
-        String::from_utf8_lossy(&output.stdout).to_string()
+        combined
     } else {
-        fs::read_to_string(&input).unwrap_or_else(|e| {
-            eprintln!("c2v: cannot read {}: {e}", input.display());
-            std::process::exit(1);
-        })
+        let mut combined = String::new();
+        for path in &cli.input {
+            let content = fs::read_to_string(path).unwrap_or_else(|e| {
+                eprintln!("c2v: cannot read {}: {e}", path.display());
+                std::process::exit(1);
+            });
+            combined.push_str(&content);
+            combined.push('\n');
+        }
+        combined
     };
 
-    let stem = input.file_stem().unwrap().to_str().unwrap();
+    let stem = if cli.input.len() > 1 {
+        cli.function.as_str()
+    } else {
+        input.file_stem().unwrap().to_str().unwrap()
+    };
     let out_path = cli.output.unwrap_or_else(|| PathBuf::from(format!("{stem}.v")));
 
     eprintln!("c2v 0.1.0 — Firedancer-style C to Verilog\n");

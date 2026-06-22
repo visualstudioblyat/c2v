@@ -1,0 +1,14 @@
+{
+    "resource_limits": {
+        "max_adders": 2,
+        "max_multipliers": 1,
+        "max_shifters": 2,
+        "max_comparators": 2
+    },
+    "options": {
+        "tree_balance": true,
+        "strength_reduce": true,
+        "pipeline": false,
+        "target": "xc7a35t"
+    }
+}

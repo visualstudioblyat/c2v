@@ -1,0 +1,14 @@
+{
+    "resource_limits": {
+        "max_adders": 16,
+        "max_multipliers": 8,
+        "max_shifters": 16,
+        "max_comparators": 8
+    },
+    "options": {
+        "tree_balance": true,
+        "strength_reduce": true,
+        "pipeline": true,
+        "target": "xcvu9p"
+    }
+}

@@ -1,3 +1,5 @@
+pub mod api;
+
 use serde::Serialize;
 
 use crate::ir::{BoundDfg, DfgOp, NodeId, ResourceId};

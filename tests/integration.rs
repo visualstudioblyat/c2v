@@ -335,3 +335,16 @@ fn test_pid() {
     let out = compile_and_verify("examples/fd_pid.c", "fd_pid_step");
     assert_verified(&out);
 }
+
+#[test]
+fn test_multifile() {
+    let out_path = unique_output("fd_blend", ".v");
+    let (_, stderr, success) = c2v(&[
+        "examples/fd_helpers.c", "examples/fd_multifile.c",
+        "-f", "fd_blend", "--verify", "-o", &out_path
+    ]);
+    let _ = std::fs::remove_file(&out_path);
+    let _ = std::fs::remove_file(format!("{}.tb.v", out_path.trim_end_matches(".v")));
+    assert!(success, "multi-file failed:\n{stderr}");
+    assert_verified(&stderr);
+}

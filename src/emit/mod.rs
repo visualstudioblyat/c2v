@@ -26,15 +26,17 @@ pub fn emit_verilog(bound: &BoundDfg) -> String {
 
     for port in &dfg.inputs {
         let wd = width_decl(port.width);
-        writeln!(out, "    input  wire {wd}{},", verilog_safe_name(&port.name)).unwrap();
+        let sign = if is_port_signed(&port.name, dfg) { "signed " } else { "" };
+        writeln!(out, "    input  wire {sign}{wd}{},", verilog_safe_name(&port.name)).unwrap();
     }
 
     for (idx, port) in dfg.outputs.iter().enumerate() {
         let wd = width_decl(port.width);
+        let sign = if is_port_signed(&port.name, dfg) { "signed " } else { "" };
         let comma = if idx == dfg.outputs.len() - 1 { "" } else { "," };
         writeln!(
             out,
-            "    output reg  {wd}{}{comma}",
+            "    output reg  {sign}{wd}{}{comma}",
             verilog_safe_name(&port.name)
         )
         .unwrap();
@@ -87,7 +89,8 @@ pub fn emit_verilog(bound: &BoundDfg) -> String {
             _ => {
                 let sig = &sig_names[&node.id];
                 let wd = width_decl(node.width);
-                writeln!(out, "    reg  {wd}{sig};").unwrap();
+                let sign = if node.signed { "signed " } else { "" };
+                writeln!(out, "    reg  {sign}{wd}{sig};").unwrap();
             }
         }
     }
@@ -350,4 +353,14 @@ pub(crate) fn width_decl(bits: u32) -> String {
 pub(crate) fn state_width(total_cycles: u32) -> u32 {
     let states = total_cycles + 2;
     (32 - states.leading_zeros()).max(1)
+}
+
+fn is_port_signed(port_name: &str, dfg: &crate::ir::Dfg) -> bool {
+    dfg.nodes.iter().any(|n| {
+        match &n.op {
+            DfgOp::Input(name) if name == port_name => n.signed,
+            DfgOp::Output(name) if name == port_name => n.signed,
+            _ => false,
+        }
+    })
 }

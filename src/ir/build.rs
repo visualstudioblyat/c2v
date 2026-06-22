@@ -73,6 +73,7 @@ struct DfgBuilder<'a> {
     return_width: u32,
     known_funcs: HashMap<String, FuncInfo>,
     inline_depth: u32,
+    inline_return_id: Option<NodeId>,
 }
 
 impl<'a> DfgBuilder<'a> {
@@ -93,6 +94,7 @@ impl<'a> DfgBuilder<'a> {
             return_width: 32,
             known_funcs: HashMap::new(),
             inline_depth: 0,
+            inline_return_id: None,
         }
     }
 
@@ -255,9 +257,10 @@ impl<'a> DfgBuilder<'a> {
                                 width,
                                 direction: Direction::In,
                             });
-                            let id = self.add_node(
+                            let signed = is_signed_type(param, source);
+                            let id = self.add_node_signed(
                                 DfgOp::Input(name.clone()),
-                                width,
+                                width, signed,
                                 param.start_position().row + 1,
                                 &name,
                             );
@@ -654,19 +657,28 @@ impl<'a> DfgBuilder<'a> {
         for child in node.children(&mut cursor) {
             if child.kind() != "return" && child.kind() != ";" {
                 let ret_id = self.build_expr(child, source, self.return_width)?;
-                let width = self.nodes[ret_id as usize].width;
-                let out_id = self.add_node(
-                    DfgOp::Output("result".to_string()),
-                    width,
-                    node.start_position().row + 1,
-                    "result",
-                );
-                self.add_edge(ret_id, out_id, width);
-                self.outputs.push(Port {
-                    name: "result".to_string(),
-                    width,
-                    direction: Direction::Out,
-                });
+
+                if self.inline_depth > 0 {
+                    // Inside inlined function — capture return value, don't create Output
+                    self.inline_return_id = Some(ret_id);
+                } else {
+                    // Top-level function — create module output
+                    let width = self.nodes[ret_id as usize].width;
+                    if self.outputs.is_empty() {
+                        let out_id = self.add_node(
+                            DfgOp::Output("result".to_string()),
+                            width,
+                            node.start_position().row + 1,
+                            "result",
+                        );
+                        self.add_edge(ret_id, out_id, width);
+                        self.outputs.push(Port {
+                            name: "result".to_string(),
+                            width,
+                            direction: Direction::Out,
+                        });
+                    }
+                }
                 break;
             }
         }
@@ -720,7 +732,9 @@ impl<'a> DfgBuilder<'a> {
                     }
                 };
 
-                let result_id = self.add_node(op, width, line, op_name);
+                let signed = self.nodes[left_id as usize].signed
+                    || self.nodes[right_id as usize].signed;
+                let result_id = self.add_node_signed(op, width, signed, line, op_name);
                 self.add_edge(left_id, result_id, width);
                 self.add_edge(right_id, result_id, width);
                 Ok(result_id)
@@ -881,42 +895,20 @@ impl<'a> DfgBuilder<'a> {
 
                         // Find the callee in the tree and inline its body
                         let callee = find_function(self.root, source, &fname);
+                        self.inline_return_id = None;
 
-                        let mut return_id = None;
                         if let Some(callee) = callee {
                             if let Some(body) = callee.child_by_field_name("body") {
-                                // Build the body, capture return
-                                let mut cursor = body.walk();
-                                for child in body.children(&mut cursor) {
-                                    match child.kind() {
-                                        "declaration" => { self.build_declaration(child, source)?; }
-                                        "expression_statement" => { self.build_expression_statement(child, source)?; }
-                                        "return_statement" => {
-                                            let mut rc = child.walk();
-                                            for ret_child in child.children(&mut rc) {
-                                                if ret_child.kind() != "return" && ret_child.kind() != ";" {
-                                                    return_id = Some(self.build_expr(ret_child, source, info.return_width)?);
-                                                    break;
-                                                }
-                                            }
-                                        }
-                                        "for_statement" => { self.build_for_loop(child, source)?; }
-                                        "if_statement" => { self.build_if(child, source)?; }
-                                        "compound_statement" => {
-                                            let mut cc = child.walk();
-                                            for sc in child.children(&mut cc) {
-                                                self.build_statement(sc, source)?;
-                                            }
-                                        }
-                                        _ => {}
-                                    }
-                                }
+                                self.build_body(body, source)?;
                             }
                         }
+
+                        let return_id = self.inline_return_id;
 
                         // Restore caller's vars (keep new nodes/edges)
                         self.inline_depth -= 1;
                         self.return_width = saved_return_width;
+                        self.inline_return_id = None;
                         self.vars = saved_vars;
 
                         match return_id {
