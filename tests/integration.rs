@@ -348,3 +348,21 @@ fn test_multifile() {
     assert!(success, "multi-file failed:\n{stderr}");
     assert_verified(&stderr);
 }
+
+#[test]
+fn test_convolution() {
+    let out = compile_and_verify("examples/fd_convolution.c", "fd_conv3x3");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_ethernet_crc() {
+    let out = compile_and_verify("examples/fd_ethernet_crc.c", "fd_eth_crc32_byte");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_spi_master() {
+    let out = compile_and_verify("examples/fd_spi_master.c", "fd_spi_shift_byte");
+    assert_verified(&out);
+}

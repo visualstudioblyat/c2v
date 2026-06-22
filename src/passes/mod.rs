@@ -1,7 +1,9 @@
+pub mod bit_narrow;
 pub mod dead_node;
 pub mod const_fold;
 pub mod cse;
 pub mod identity_elim;
+pub mod loop_invariant;
 pub mod mux_simplify;
 pub mod reassociate;
 pub mod strength_reduce;

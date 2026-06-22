@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 mod bind;
+mod debug;
 mod emit;
 mod errors;
 mod ir;
@@ -93,6 +94,14 @@ struct Cli {
     /// ML policy file (JSON) for schedule/bind overrides
     #[arg(long, short = 'P')]
     policy: Option<PathBuf>,
+
+    /// Emit source map (C line → Verilog signal mapping)
+    #[arg(long)]
+    source_map: bool,
+
+    /// Print DFG statistics
+    #[arg(long)]
+    stats: bool,
 }
 
 fn main() {
@@ -241,6 +250,7 @@ fn main() {
     pipeline.add(Box::new(passes::identity_elim::IdentityElimination));
     pipeline.add(Box::new(passes::mux_simplify::MuxSimplification));
     pipeline.add(Box::new(passes::cse::CommonSubexprElimination));
+    pipeline.add(Box::new(passes::loop_invariant::LoopInvariantCodeMotion));
     pipeline.add(Box::new(passes::dead_node::DeadNodeElimination));
     pipeline.add(Box::new(passes::width_narrow::WidthNarrowing));
 
@@ -383,6 +393,28 @@ fn main() {
         if cli.pipeline {
             let _ = fs::remove_file(&verify_path);
         }
+    }
+
+    // Source map
+    if cli.source_map {
+        let map_path = out_path.with_extension("map.json");
+        let map = debug::generate_source_map(&bound);
+        let map_json = serde_json::to_string_pretty(&map).unwrap();
+        fs::write(&map_path, &map_json).unwrap();
+        eprintln!("[map]       {}{:>30}", map_path.display(), format!("✓"));
+
+        let comment = debug::emit_source_map_comment(&bound);
+        let verilog_with_map = format!("{comment}\n{}", fs::read_to_string(&out_path).unwrap_or_default());
+        let _ = fs::write(&out_path, verilog_with_map);
+    }
+
+    // Stats
+    if cli.stats {
+        let stats = debug::compute_stats(&bound);
+        eprintln!("[stats]     {} active nodes, {} edges, fan-in={} fan-out={}",
+            stats.active_nodes, stats.total_edges, stats.max_fan_in, stats.max_fan_out);
+        eprintln!("            compute={} mux={} load={} store={} const={}",
+            stats.compute_nodes, stats.mux_nodes, stats.load_nodes, stats.store_nodes, stats.const_nodes);
     }
 
     // Summary

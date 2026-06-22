@@ -1,0 +1,247 @@
+{
+  "entries": [
+    {
+      "c_line": 16,
+      "c_expr": "shr",
+      "verilog_signal": "shr",
+      "verilog_line": 0,
+      "op": "Shr",
+      "width": 32,
+      "cycle": 1
+    },
+    {
+      "c_line": 16,
+      "c_expr": "shr",
+      "verilog_signal": "shr_1",
+      "verilog_line": 0,
+      "op": "Shr",
+      "width": 32,
+      "cycle": 1
+    },
+    {
+      "c_line": 16,
+      "c_expr": "shr",
+      "verilog_signal": "shr_2",
+      "verilog_line": 0,
+      "op": "Shr",
+      "width": 32,
+      "cycle": 1
+    },
+    {
+      "c_line": 16,
+      "c_expr": "bxor_tree",
+      "verilog_signal": "bxor_4",
+      "verilog_line": 0,
+      "op": "Xor",
+      "width": 32,
+      "cycle": 2
+    },
+    {
+      "c_line": 16,
+      "c_expr": "xor",
+      "verilog_signal": "bxor",
+      "verilog_line": 0,
+      "op": "Xor",
+      "width": 32,
+      "cycle": 3
+    },
+    {
+      "c_line": 17,
+      "c_expr": "and",
+      "verilog_signal": "band",
+      "verilog_line": 0,
+      "op": "And",
+      "width": 32,
+      "cycle": 1
+    },
+    {
+      "c_line": 17,
+      "c_expr": "not",
+      "verilog_signal": "bnot",
+      "verilog_line": 0,
+      "op": "Not",
+      "width": 32,
+      "cycle": 1
+    },
+    {
+      "c_line": 17,
+      "c_expr": "and",
+      "verilog_signal": "band_1",
+      "verilog_line": 0,
+      "op": "And",
+      "width": 32,
+      "cycle": 2
+    },
+    {
+      "c_line": 17,
+      "c_expr": "xor",
+      "verilog_signal": "bxor_1",
+      "verilog_line": 0,
+      "op": "Xor",
+      "width": 32,
+      "cycle": 3
+    },
+    {
+      "c_line": 19,
+      "c_expr": "shr",
+      "verilog_signal": "shr_3",
+      "verilog_line": 0,
+      "op": "Shr",
+      "width": 32,
+      "cycle": 1
+    },
+    {
+      "c_line": 19,
+      "c_expr": "shr",
+      "verilog_signal": "shr_4",
+      "verilog_line": 0,
+      "op": "Shr",
+      "width": 32,
+      "cycle": 1
+    },
+    {
+      "c_line": 19,
+      "c_expr": "shr",
+      "verilog_signal": "shr_5",
+      "verilog_line": 0,
+      "op": "Shr",
+      "width": 32,
+      "cycle": 1
+    },
+    {
+      "c_line": 19,
+      "c_expr": "bxor_tree",
+      "verilog_signal": "bxor_5",
+      "verilog_line": 0,
+      "op": "Xor",
+      "width": 32,
+      "cycle": 2
+    },
+    {
+      "c_line": 19,
+      "c_expr": "xor",
+      "verilog_signal": "bxor_2",
+      "verilog_line": 0,
+      "op": "Xor",
+      "width": 32,
+      "cycle": 3
+    },
+    {
+      "c_line": 20,
+      "c_expr": "and",
+      "verilog_signal": "band_2",
+      "verilog_line": 0,
+      "op": "And",
+      "width": 32,
+      "cycle": 1
+    },
+    {
+      "c_line": 20,
+      "c_expr": "and",
+      "verilog_signal": "band_3",
+      "verilog_line": 0,
+      "op": "And",
+      "width": 32,
+      "cycle": 1
+    },
+    {
+      "c_line": 20,
+      "c_expr": "and",
+      "verilog_signal": "band_4",
+      "verilog_line": 0,
+      "op": "And",
+      "width": 32,
+      "cycle": 1
+    },
+    {
+      "c_line": 20,
+      "c_expr": "bxor_tree",
+      "verilog_signal": "bxor_6",
+      "verilog_line": 0,
+      "op": "Xor",
+      "width": 32,
+      "cycle": 2
+    },
+    {
+      "c_line": 20,
+      "c_expr": "xor",
+      "verilog_signal": "bxor_3",
+      "verilog_line": 0,
+      "op": "Xor",
+      "width": 32,
+      "cycle": 3
+    },
+    {
+      "c_line": 23,
+      "c_expr": "add_tree",
+      "verilog_signal": "add_1",
+      "verilog_line": 0,
+      "op": "Add",
+      "width": 32,
+      "cycle": 1
+    },
+    {
+      "c_line": 23,
+      "c_expr": "add_tree",
+      "verilog_signal": "add_3",
+      "verilog_line": 0,
+      "op": "Add",
+      "width": 32,
+      "cycle": 1
+    },
+    {
+      "c_line": 23,
+      "c_expr": "add_tree",
+      "verilog_signal": "add_2",
+      "verilog_line": 0,
+      "op": "Add",
+      "width": 32,
+      "cycle": 4
+    },
+    {
+      "c_line": 23,
+      "c_expr": "add_tree",
+      "verilog_signal": "add_4",
+      "verilog_line": 0,
+      "op": "Add",
+      "width": 32,
+      "cycle": 4
+    },
+    {
+      "c_line": 23,
+      "c_expr": "add_tree",
+      "verilog_signal": "add_5",
+      "verilog_line": 0,
+      "op": "Add",
+      "width": 32,
+      "cycle": 5
+    },
+    {
+      "c_line": 23,
+      "c_expr": "add_tree",
+      "verilog_signal": "add_6",
+      "verilog_line": 0,
+      "op": "Add",
+      "width": 32,
+      "cycle": 5
+    },
+    {
+      "c_line": 23,
+      "c_expr": "add",
+      "verilog_signal": "add",
+      "verilog_line": 0,
+      "op": "Add",
+      "width": 32,
+      "cycle": 6
+    },
+    {
+      "c_line": 23,
+      "c_expr": "result",
+      "verilog_signal": "node_42",
+      "verilog_line": 0,
+      "op": "Output(\"result\")",
+      "width": 32,
+      "cycle": 7
+    }
+  ]
+}
