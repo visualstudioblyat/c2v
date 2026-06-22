@@ -450,3 +450,27 @@ fn test_adpcm() {
     let out = compile_and_verify("examples/fd_adpcm_step.c", "fd_adpcm_encode");
     assert_verified(&out);
 }
+
+#[test]
+fn test_tick_to_trade() {
+    let out = compile_and_verify("examples/fd_tick_to_trade.c", "fd_process_tick");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_order_match() {
+    let out = compile_and_verify("examples/fd_order_match.c", "fd_match_orders");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_sha3_chi() {
+    let out = compile_and_verify("examples/fd_sha3_chi.c", "fd_sha3_chi");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_chacha_qr() {
+    let out = compile_and_verify("examples/fd_chacha_qr.c", "fd_chacha_quarter_round");
+    assert_verified(&out);
+}

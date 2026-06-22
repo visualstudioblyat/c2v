@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Icarus Verilog
+        run: sudo apt-get install -y iverilog
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Run tests
+        run: cargo test
+
+      - name: Verify examples
+        run: |
+          for f in examples/fd_add.c examples/fd_hash_round.c examples/fd_fir8_parallel.c examples/fd_aes_sbox.c examples/fd_crc8.c examples/fd_max.c examples/fd_inline.c examples/fd_packet.c; do
+            func=$(grep -oP '\w+(?=\s*\()' "$f" | grep fd_ | tail -1)
+            echo "=== $f ($func) ==="
+            ./target/release/c2v "$f" -f "$func" --verify
+          done

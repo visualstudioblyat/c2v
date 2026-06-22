@@ -27,10 +27,10 @@ fd_fp_add( uint a, uint b ) {
   /* Align exponents */
   uint exp_diff;
   if( exp_a >= exp_b ) {
-    exp_diff = exp_a - exp_b;
+    exp_diff = (exp_a - exp_b) & 31;
     frac_b = frac_b >> exp_diff;
   } else {
-    exp_diff = exp_b - exp_a;
+    exp_diff = (exp_b - exp_a) & 31;
     frac_a = frac_a >> exp_diff;
     exp_a = exp_b;
     sign_a = sign_b;

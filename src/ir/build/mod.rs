@@ -876,6 +876,8 @@ impl<'a> DfgBuilder<'a> {
                     ">" => (DfgOp::Gt, "gt"),
                     "<=" => (DfgOp::Le, "le"),
                     ">=" => (DfgOp::Ge, "ge"),
+                    "&&" => (DfgOp::And, "land"),
+                    "||" => (DfgOp::Or, "lor"),
                     _ => {
                         return Err(DfgBuildError::Unsupported(
                             line,
