@@ -82,7 +82,7 @@ pub fn emit_vivado_tcl(
 
 pub fn emit_ip_package_tcl(
     bound:        &BoundDfg,
-    device_part:  &str,
+    _device_part:  &str,
     vendor:       &str,
     version:      &str,
 ) -> String {

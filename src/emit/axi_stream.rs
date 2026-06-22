@@ -144,7 +144,7 @@ pub fn emit_axi_stream_wrapper( bound: &BoundDfg ) -> String {
 
     /* AXI-Stream FSM */
     writeln!( out, "    /* AXI-Stream flow control FSM */" ).unwrap();
-    let wait_cycles = bound.scheduled.total_cycles * 2 + 4;
+    let _wait_cycles = bound.scheduled.total_cycles * 2 + 4;
     writeln!( out, "    reg [7:0] wait_counter;" ).unwrap();
     writeln!( out ).unwrap();
     writeln!( out, "    always @(posedge aclk) begin" ).unwrap();

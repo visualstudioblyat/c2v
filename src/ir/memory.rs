@@ -115,9 +115,9 @@ fn max_per_cycle(cycles: Option<&Vec<u32>>) -> u32 {
 
 fn infer_memory_type(
     total_bits: usize,
-    depth: usize,
+    _depth: usize,
     read_ports: u32,
-    write_ports: u32,
+    _write_ports: u32,
 ) -> MemoryInference {
     if total_bits <= 64 {
         MemoryInference::Registers

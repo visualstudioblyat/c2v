@@ -1,5 +1,6 @@
 pub mod xilinx;
 pub mod intel;
+pub mod lattice;
 
 use serde::Serialize;
 
@@ -48,6 +49,11 @@ pub fn get_target(name: &str) -> Option<Box<dyn TargetModel>> {
         "5cefa5" | "cyclonev" => Some(Box::new(intel::CycloneV_5CEFA5)),
         "10ax115" | "arria10" => Some(Box::new(intel::Arria10_115)),
         "agfb014" | "agilex" => Some(Box::new(intel::Agilex_FB014)),
+        "ice40up5k" | "ice40" => Some(Box::new(lattice::ICE40_UP5K)),
+        "ice40hx8k" => Some(Box::new(lattice::ICE40_HX8K)),
+        "ecp5-25f" | "ecp5" => Some(Box::new(lattice::ECP5_25F)),
+        "ecp5-85f" => Some(Box::new(lattice::ECP5_85F)),
+        "lifcl-17" | "crosslink" => Some(Box::new(lattice::CrossLink_NX_17)),
         _ => None,
     }
 }
@@ -62,5 +68,10 @@ pub fn list_targets() -> Vec<(&'static str, &'static str)> {
         ("5cefa5",    "Intel Cyclone V 5CEFA5 (77k ALMs, 150 DSP)"),
         ("10ax115",   "Intel Arria 10 115 (427k ALMs, 1518 DSP)"),
         ("agfb014",   "Intel Agilex F B014 (487k ALMs, 3960 DSP)"),
+        ("ice40up5k", "Lattice iCE40 UP5K (5k LUTs, 8 DSP)"),
+        ("ice40hx8k", "Lattice iCE40 HX8K (7.6k LUTs, no DSP)"),
+        ("ecp5-25f",  "Lattice ECP5 25F (24k LUTs, 28 DSP)"),
+        ("ecp5-85f",  "Lattice ECP5 85F (84k LUTs, 156 DSP)"),
+        ("lifcl-17",  "Lattice CrossLink-NX 17 (17k LUTs, 56 DSP)"),
     ]
 }
