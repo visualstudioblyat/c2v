@@ -7,6 +7,7 @@ pub mod report;
 pub mod rtlil;
 pub mod testbench_gen;
 pub mod vivado;
+pub mod yosys_script;
 
 use std::collections::HashMap;
 use std::fmt::Write;

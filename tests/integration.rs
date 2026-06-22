@@ -583,3 +583,15 @@ fn test_estimate_vs_synth() {
     assert!(ratio < 3.0,
         "estimate ({est_luts}) vs synth ({synth_luts}) ratio {ratio:.1} exceeds 3x");
 }
+
+#[test]
+fn test_fft_butterfly() {
+    let out = compile_and_verify("examples/fd_fft_butterfly.c", "fd_butterfly");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_merkle() {
+    let out = compile_and_verify("examples/fd_merkle.c", "fd_merkle_combine");
+    assert_verified(&out);
+}

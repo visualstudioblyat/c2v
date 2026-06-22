@@ -1,4 +1,5 @@
 mod build;
+pub mod cost;
 pub mod dot;
 pub mod entropy;
 pub mod memory;
