@@ -5,6 +5,7 @@ mod debug;
 mod emit;
 mod errors;
 mod ir;
+mod lint;
 mod parse;
 mod passes;
 mod policy;
@@ -102,6 +103,10 @@ struct Cli {
     /// Print DFG statistics
     #[arg(long)]
     stats: bool,
+
+    /// Generate VCD waveform testbench
+    #[arg(long)]
+    wave: bool,
 }
 
 fn main() {
@@ -308,6 +313,19 @@ fn main() {
     let n_resources = bound.resources.len();
     eprintln!("[bind]      {n_resources} resources{:>26}", format!("✓  {:?}", t0.elapsed()));
 
+    // Lint
+    let lint_warnings = lint::lint_dfg(&bound);
+    if !lint_warnings.is_empty() {
+        for w in &lint_warnings {
+            let sev = match w.severity {
+                lint::Severity::Info => "info",
+                lint::Severity::Warning => "WARN",
+                lint::Severity::Error => "ERR ",
+            };
+            eprintln!("[lint]      {sev}: {}", w.message);
+        }
+    }
+
     // Phase 6: Emit Verilog
     let t0 = Instant::now();
     let verilog = if cli.pipeline {
@@ -322,6 +340,14 @@ fn main() {
         std::process::exit(1);
     });
     eprintln!("[emit]      {} ({v_lines} lines, {mode}){:>6}", out_path.display(), format!("✓  {:?}", t0.elapsed()));
+
+    // Phase 6.5: Waveform testbench
+    if cli.wave {
+        let wave_tb = emit::testbench_gen::generate_waveform_testbench(&bound);
+        let wave_path = out_path.with_extension("wave.v");
+        fs::write(&wave_path, &wave_tb).unwrap();
+        eprintln!("[wave]      {}", wave_path.display());
+    }
 
     // Phase 7: Decision trace
     if cli.trace {

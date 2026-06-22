@@ -366,3 +366,9 @@ fn test_spi_master() {
     let out = compile_and_verify("examples/fd_spi_master.c", "fd_spi_shift_byte");
     assert_verified(&out);
 }
+
+#[test]
+fn test_sha256_compress() {
+    let out = compile_with_balance("examples/fd_sha256_compress.c", "fd_sha256_compress4");
+    assert_verified(&out);
+}
