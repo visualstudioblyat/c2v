@@ -1,5 +1,7 @@
+pub mod cocotb;
 pub mod constraints;
 pub mod pipeline;
+pub mod report;
 pub mod rtlil;
 pub mod testbench_gen;
 

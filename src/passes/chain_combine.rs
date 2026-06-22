@@ -1,4 +1,4 @@
-use crate::ir::{Dfg, DfgOp, DfgEdge, NodeId};
+use crate::ir::{Dfg, DfgOp, NodeId};
 use super::{Pass, PassResult};
 
 pub struct ChainCombine;

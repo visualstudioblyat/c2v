@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+mod bench;
 mod bind;
 mod debug;
 mod emit;
