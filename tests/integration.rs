@@ -432,3 +432,21 @@ fn test_sha1_multi() {
     let out = compile_and_verify("examples/fd_sha1_multi.c", "fd_sha1_multi");
     assert_verified(&out);
 }
+
+#[test]
+fn test_arbiter() {
+    let out = compile_and_verify("examples/fd_arbiter.c", "fd_arbiter_rr4");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_blowfish_round() {
+    let out = compile_and_verify("examples/fd_blowfish_round.c", "fd_blowfish_round");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_adpcm() {
+    let out = compile_and_verify("examples/fd_adpcm_step.c", "fd_adpcm_encode");
+    assert_verified(&out);
+}
