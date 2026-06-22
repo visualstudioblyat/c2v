@@ -1,9 +1,11 @@
+pub mod axi_stream;
 pub mod cocotb;
 pub mod constraints;
 pub mod pipeline;
 pub mod report;
 pub mod rtlil;
 pub mod testbench_gen;
+pub mod vivado;
 
 use std::collections::HashMap;
 use std::fmt::Write;
