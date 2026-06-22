@@ -3,6 +3,7 @@ pub mod cost;
 pub mod dot;
 pub mod entropy;
 pub mod memory;
+pub mod schedule_info;
 pub mod transform;
 pub mod tree_balance;
 pub mod validate;

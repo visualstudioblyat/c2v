@@ -595,3 +595,15 @@ fn test_merkle() {
     let out = compile_and_verify("examples/fd_merkle.c", "fd_merkle_combine");
     assert_verified(&out);
 }
+
+#[test]
+fn test_reed_solomon() {
+    let out = compile_and_verify("examples/fd_reed_solomon.c", "fd_gf256_mul");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_popcount64() {
+    let out = compile_and_verify("examples/fd_popcount64.c", "fd_popcount64");
+    assert_verified(&out);
+}
