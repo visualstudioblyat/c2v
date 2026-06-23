@@ -1,6 +1,7 @@
 pub mod alap;
 pub mod list;
 pub mod mobility;
+pub mod modulo_schedule;
 pub mod pipeline_emit;
 pub mod pipeline_loop;
 mod sdc;
