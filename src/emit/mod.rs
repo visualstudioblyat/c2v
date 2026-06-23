@@ -7,6 +7,7 @@ pub mod pipeline;
 pub mod quartus;
 pub mod report;
 pub mod rtlil;
+pub mod systemverilog;
 pub mod testbench_gen;
 pub mod vivado;
 pub mod wishbone;
