@@ -1,5 +1,6 @@
 pub mod bit_narrow;
 pub mod chain_combine;
+pub mod constant_prop;
 pub mod dead_node;
 pub mod const_fold;
 pub mod cse;

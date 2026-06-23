@@ -264,6 +264,7 @@ fn main() {
     pipeline.add(Box::new(passes::identity_elim::IdentityElimination));
     pipeline.add(Box::new(passes::mux_simplify::MuxSimplification));
     pipeline.add(Box::new(passes::cse::CommonSubexprElimination));
+    pipeline.add(Box::new(passes::constant_prop::ConstantPropagation));
     pipeline.add(Box::new(passes::loop_invariant::LoopInvariantCodeMotion));
     pipeline.add(Box::new(passes::chain_combine::ChainCombine));
     pipeline.add(Box::new(passes::duplicate_store::DuplicateStoreElimination));

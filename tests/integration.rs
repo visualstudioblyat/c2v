@@ -649,3 +649,15 @@ fn test_cobs_encode() {
     let out = compile_and_verify("examples/fd_cobs_encode.c", "fd_cobs_encode_block");
     assert_verified(&out);
 }
+
+#[test]
+fn test_hamming_encode() {
+    let out = compile_and_verify("examples/fd_parity_gen.c", "fd_hamming_encode");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_hamming_check() {
+    let out = compile_and_verify("examples/fd_parity_gen.c", "fd_hamming_check");
+    assert_verified(&out);
+}
