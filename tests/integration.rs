@@ -607,3 +607,21 @@ fn test_popcount64() {
     let out = compile_and_verify("examples/fd_popcount64.c", "fd_popcount64");
     assert_verified(&out);
 }
+
+#[test]
+fn test_blake3() {
+    let out = compile_and_verify("examples/fd_blake3_round.c", "fd_blake3_g");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_siphash() {
+    let out = compile_and_verify("examples/fd_siphash.c", "fd_siphash_round");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_ntt_butterfly() {
+    let out = compile_and_verify("examples/fd_ntt_butterfly.c", "fd_ntt_butterfly");
+    assert_verified(&out);
+}
