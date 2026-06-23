@@ -6,7 +6,7 @@
 use std::fmt::Write;
 
 use crate::ir::{BoundDfg, DfgOp, NodeId};
-use super::{build_signal_names, get_inputs, verilog_safe_name, width_decl, verilog_binop, state_width, is_port_signed};
+use super::{build_signal_names, get_inputs, verilog_safe_name, verilog_binop, state_width, is_port_signed};
 
 pub fn emit_systemverilog( bound: &BoundDfg ) -> String {
     let mut out = String::with_capacity( 8192 );

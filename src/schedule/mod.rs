@@ -1,6 +1,8 @@
 pub mod alap;
 pub mod list;
 pub mod mobility;
+pub mod pipeline_emit;
+pub mod pipeline_loop;
 mod sdc;
 
 use std::collections::HashMap;

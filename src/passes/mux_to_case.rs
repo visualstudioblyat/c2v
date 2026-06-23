@@ -4,7 +4,6 @@
    as a Verilog case statement instead of nested ternaries, which
    produces better synthesis results and more readable RTL. */
 
-use std::collections::HashMap;
 
 use crate::ir::{Dfg, DfgOp, NodeId};
 use super::{Pass, PassResult};

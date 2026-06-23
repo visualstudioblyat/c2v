@@ -22,8 +22,8 @@ pub fn emit_csr_block( bound: &BoundDfg ) -> String {
     let dfg    = &bound.scheduled.dfg;
     let name   = super::verilog_safe_name( &dfg.name );
 
-    let n_inputs  = dfg.inputs.len();
-    let n_outputs = dfg.outputs.len();
+    let _n_inputs  = dfg.inputs.len();
+    let _n_outputs = dfg.outputs.len();
     let addr_bits = 6u32; /* enough for 16 registers */
 
     writeln!( out, "// c2v CSR block for {name}" ).unwrap();

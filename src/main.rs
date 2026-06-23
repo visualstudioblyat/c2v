@@ -116,6 +116,10 @@ struct Cli {
     /// Generate AXI-Stream wrapper
     #[arg(long)]
     axi: bool,
+
+    /// Analyze loop pipelining potential (show II, recurrence, speedup)
+    #[arg(long)]
+    pipeline_analysis: bool,
 }
 
 fn main() {
@@ -318,6 +322,35 @@ fn main() {
         sched_kind,
         format!("✓  {:?}", t0.elapsed())
     );
+
+    // Phase 4.5: Loop pipeline analysis
+    if cli.pipeline_analysis {
+        let rc = schedule::ResourceConstraints {
+            max_adders:      cli.max_add,
+            max_multipliers: cli.max_mul,
+            max_shifters:    8,
+            max_comparators: 4,
+        };
+        let analysis = schedule::pipeline_loop::analyze_loop_pipeline(
+            &scheduled.dfg, &[], &rc,
+        );
+        eprintln!("[pipeline]  body={} ops, latency={} cycles",
+            analysis.body_ops, analysis.body_latency);
+        eprintln!("            resource_II={}, recurrence_II={}, min_II={}",
+            analysis.resource_ii, analysis.recurrence_ii, analysis.min_ii);
+        if analysis.can_pipeline {
+            let speedup = schedule::pipeline_emit::compute_pipeline_speedup(
+                16, analysis.body_latency, analysis.min_ii,
+            );
+            eprintln!("            pipelineable: {:.1}x throughput for 16 iterations",
+                speedup);
+        } else {
+            eprintln!("            {}", analysis.reason);
+        }
+        for dep in &analysis.loop_carried_deps {
+            eprintln!("            carried: {} (latency={})", dep.var_name, dep.latency);
+        }
+    }
 
     // Phase 5: Bind
     let t0 = Instant::now();

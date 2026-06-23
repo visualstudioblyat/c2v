@@ -7,7 +7,7 @@
    - AND with 0 (always 0)
    - OR with all-ones (always all-ones) */
 
-use crate::ir::{Dfg, DfgEdge, DfgOp, NodeId};
+use crate::ir::{Dfg, DfgOp, NodeId};
 use super::{Pass, PassResult};
 
 pub struct ConstantPropagation;
@@ -41,7 +41,7 @@ impl Pass for ConstantPropagation {
                         } else { None }
                     }
                     /* mux(1, t, f) = t */
-                    ( DfgOp::Mux, &[cond, t_val, _f_val] ) => {
+                    ( DfgOp::Mux, &[cond, _t_val, _f_val] ) => {
                         if let DfgOp::Const(v) = &dfg.nodes[cond as usize].op {
                             if *v != 0 {
                                 Some( DfgOp::Const(0) ) /* placeholder — need redirect */
