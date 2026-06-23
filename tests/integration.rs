@@ -675,3 +675,9 @@ fn test_tile_ctx() {
     let out = compile_and_verify("examples/fd_tile_ctx.c", "fd_dedup_during_frag");
     assert_verified(&out);
 }
+
+#[test]
+fn test_enum_fsm() {
+    let out = compile_and_verify("examples/fd_enum_fsm.c", "fd_packet_dispatch");
+    assert_verified(&out);
+}

@@ -12,12 +12,15 @@ pub fn build_dfg(tree: &Tree, source: &str, name: &str) -> Result<Dfg, DfgBuildE
 
     let mut builder = DfgBuilder::new(name.to_string(), root);
 
-    // First pass: collect struct/typedef definitions and all function bodies
+    /* First pass: collect type definitions and function bodies */
     let mut cursor = root.walk();
     for child in root.children(&mut cursor) {
         match child.kind() {
             "struct_specifier" | "type_definition" => {
                 builder.collect_struct_def(child, source);
+            }
+            "enum_specifier" => {
+                builder.collect_enum_def(child, source);
             }
             "function_definition" => {
                 builder.collect_function(child, source);
@@ -72,6 +75,7 @@ struct DfgBuilder<'a> {
     vars: HashMap<String, NodeId>,
     arrays: HashMap<String, ArrayInfo>,
     struct_defs: HashMap<String, StructInfo>,
+    enum_values: HashMap<String, u64>,
     var_types: HashMap<String, String>,
     return_width: u32,
     known_funcs: HashMap<String, FuncInfo>,
@@ -93,11 +97,49 @@ impl<'a> DfgBuilder<'a> {
             vars: HashMap::new(),
             arrays: HashMap::new(),
             struct_defs: HashMap::new(),
+            enum_values: HashMap::new(),
             var_types: HashMap::new(),
             return_width: 32,
             known_funcs: HashMap::new(),
             inline_depth: 0,
             inline_return_id: None,
+        }
+    }
+
+    /* collect_enum_def parses an enum definition and registers each
+       enumerator as a named constant. Handles both:
+       `enum { A, B, C }` (auto-numbered 0,1,2) and
+       `enum { A=5, B=10 }` (explicit values). */
+    fn collect_enum_def(&mut self, node: Node, source: &str) {
+        let mut cursor = node.walk();
+        let mut next_val = 0u64;
+
+        for child in node.children(&mut cursor) {
+            if child.kind() == "enumerator_list" {
+                let mut ec = child.walk();
+                for enumerator in child.children(&mut ec) {
+                    if enumerator.kind() == "enumerator" {
+                        let mut name = String::new();
+                        let mut explicit_val = None;
+
+                        let mut ic = enumerator.walk();
+                        for inner in enumerator.children(&mut ic) {
+                            if inner.kind() == "identifier" {
+                                name = node_text(inner, source).to_string();
+                            }
+                            if inner.kind() == "number_literal" {
+                                explicit_val = Some(parse_number(node_text(inner, source)));
+                            }
+                        }
+
+                        let val = explicit_val.unwrap_or(next_val);
+                        if !name.is_empty() {
+                            self.enum_values.insert(name, val);
+                        }
+                        next_val = val + 1;
+                    }
+                }
+            }
         }
     }
 
@@ -1024,8 +1066,11 @@ impl<'a> DfgBuilder<'a> {
             }
             "identifier" => {
                 let name = node_text(node, source);
+                /* Check variables first, then enum constants, then treat as input */
                 if let Some(&id) = self.vars.get(name) {
                     Ok(id)
+                } else if let Some(&val) = self.enum_values.get(name) {
+                    Ok(self.add_node(DfgOp::Const(val), ctx_width, line, name))
                 } else {
                     let id = self.add_node(DfgOp::Input(name.to_string()), ctx_width, line, name);
                     self.vars.insert(name.to_string(), id);
