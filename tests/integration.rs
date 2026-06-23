@@ -637,3 +637,15 @@ fn test_bayer_demosaic() {
     let out = compile_and_verify("examples/fd_bayer_demosaic.c", "fd_demosaic_pixel");
     assert_verified(&out);
 }
+
+#[test]
+fn test_sigmoid() {
+    let out = compile_and_verify("examples/fd_sigmoid.c", "fd_sigmoid_approx");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_cobs_encode() {
+    let out = compile_and_verify("examples/fd_cobs_encode.c", "fd_cobs_encode_block");
+    assert_verified(&out);
+}
