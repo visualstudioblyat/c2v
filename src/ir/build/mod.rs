@@ -245,34 +245,121 @@ impl<'a> DfgBuilder<'a> {
         Ok(())
     }
 
+    /* extract_params walks the function's parameter list and creates
+       input ports + DFG Input nodes. Handles three cases:
+       - Scalar: `uint x` → one input port
+       - Pointer-to-struct: `state_t *ctx` → expand struct fields as ports
+       - Array: `uint data[N]` → treated as N scalar inputs (future) */
     fn extract_params(&mut self, declarator: Node, source: &str) {
         let mut cursor = declarator.walk();
         for child in declarator.children(&mut cursor) {
             if child.kind() == "parameter_list" {
                 let mut param_cursor = child.walk();
                 for param in child.children(&mut param_cursor) {
-                    if param.kind() == "parameter_declaration" {
-                        if let Some(decl) = param.child_by_field_name("declarator") {
-                            let name = node_text(decl, source).to_string();
-                            let width = infer_width_from_type(param, source);
-                            self.inputs.push(Port {
-                                name: name.clone(),
-                                width,
-                                direction: Direction::In,
-                            });
-                            let signed = is_signed_type(param, source);
-                            let id = self.add_node_signed(
-                                DfgOp::Input(name.clone()),
-                                width, signed,
-                                param.start_position().row + 1,
-                                &name,
-                            );
-                            self.vars.insert(name, id);
-                        }
+                    if param.kind() != "parameter_declaration" { continue; }
+
+                    let decl = match param.child_by_field_name("declarator") {
+                        Some(d) => d,
+                        None    => continue,
+                    };
+
+                    let line = param.start_position().row + 1;
+
+                    /* Pointer-to-struct: `type_t *name` */
+                    if decl.kind() == "pointer_declarator" {
+                        self.extract_pointer_param(param, decl, source, line);
+                        continue;
                     }
+
+                    /* Scalar parameter */
+                    let name   = node_text(decl, source).to_string();
+                    let width  = infer_width_from_type(param, source);
+                    let signed = is_signed_type(param, source);
+
+                    self.inputs.push(Port {
+                        name: name.clone(),
+                        width,
+                        direction: Direction::In,
+                    });
+                    let id = self.add_node_signed(
+                        DfgOp::Input(name.clone()),
+                        width, signed, line, &name,
+                    );
+                    self.vars.insert(name, id);
                 }
             }
         }
+    }
+
+    /* extract_pointer_param handles `type_t *name` parameters by
+       expanding the struct's fields into individual input ports.
+       For `state_t *ctx` with fields {x: u32, y: u32}, this creates
+       ports `ctx_x` and `ctx_y`, and maps `ctx->x` to the `ctx_x` input.
+       If the pointee type is not a known struct, treats it as a single
+       scalar input (pointer-to-scalar). */
+    fn extract_pointer_param(
+        &mut self,
+        param: Node,
+        decl:  Node,
+        source: &str,
+        line:  usize,
+    ) {
+        /* Extract the variable name from inside the pointer_declarator.
+           pointer_declarator has children: "*", then the identifier */
+        let mut inner_name = String::new();
+        let mut dc = decl.walk();
+        for child in decl.children(&mut dc) {
+            if child.kind() == "identifier" {
+                inner_name = node_text(child, source).to_string();
+            }
+        }
+        if inner_name.is_empty() { return; }
+
+        /* Resolve the struct type from the parameter's type specifier */
+        let type_text = node_text(param, source);
+        let struct_type = self.struct_defs.keys()
+            .find(|k| type_text.contains(k.as_str()))
+            .cloned();
+
+        if let Some(ref st_name) = struct_type {
+            if let Some(sdef) = self.struct_defs.get(st_name).cloned() {
+                /* Register this variable as a struct type */
+                self.var_types.insert(inner_name.clone(), st_name.clone());
+
+                /* Create one input port per struct field */
+                for (fname, fwidth) in &sdef.fields {
+                    let port_name = format!("{}_{}", inner_name, fname);
+                    self.inputs.push(Port {
+                        name:      port_name.clone(),
+                        width:     *fwidth,
+                        direction: Direction::In,
+                    });
+                    let id = self.add_node(
+                        DfgOp::Input(port_name.clone()),
+                        *fwidth, line, &port_name,
+                    );
+                    /* Map both `ctx.field` and `ctx_field` to this input */
+                    let qualified = format!("{}.{}", inner_name, fname);
+                    self.vars.insert(qualified, id);
+                    self.vars.insert(port_name, id);
+                }
+                return;
+            }
+        }
+
+        /* Fallback: pointer-to-scalar — treat as single input */
+        let width  = infer_width_from_type(param, source);
+        let signed = is_signed_type(param, source);
+        self.inputs.push(Port {
+            name:      inner_name.clone(),
+            width,
+            direction: Direction::In,
+        });
+        let id = self.add_node_signed(
+            DfgOp::Input(inner_name.clone()),
+            width, signed, line, &inner_name,
+        );
+        self.vars.insert(inner_name, id);
     }
 
     fn build_body(&mut self, body: Node, source: &str) -> Result<(), DfgBuildError> {
@@ -905,6 +992,22 @@ impl<'a> DfgBuilder<'a> {
                     "~" => {
                         let result_id = self.add_node(DfgOp::Not, width, line, "not");
                         self.add_edge(operand_id, result_id, width);
+                        Ok(result_id)
+                    }
+                    "-" => {
+                        /* Unary minus: -x = 0 - x */
+                        let zero_id = self.add_node(DfgOp::Const(0), width, line, "c_0");
+                        let result_id = self.add_node_signed(DfgOp::Sub, width, true, line, "neg");
+                        self.add_edge(zero_id, result_id, width);
+                        self.add_edge(operand_id, result_id, width);
+                        Ok(result_id)
+                    }
+                    "!" => {
+                        /* Logical NOT: !x = (x == 0) */
+                        let zero_id = self.add_node(DfgOp::Const(0), width, line, "c_0");
+                        let result_id = self.add_node(DfgOp::Eq, 1, line, "lnot");
+                        self.add_edge(operand_id, result_id, width);
+                        self.add_edge(zero_id, result_id, width);
                         Ok(result_id)
                     }
                     _ => Err(DfgBuildError::Unsupported(

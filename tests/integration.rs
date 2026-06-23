@@ -661,3 +661,17 @@ fn test_hamming_check() {
     let out = compile_and_verify("examples/fd_parity_gen.c", "fd_hamming_check");
     assert_verified(&out);
 }
+
+/* ─── Pointer-to-struct ─── */
+
+#[test]
+fn test_struct_ptr() {
+    let out = compile_and_verify("examples/fd_struct_ptr.c", "fd_vec3_length_sq");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_tile_ctx() {
+    let out = compile_and_verify("examples/fd_tile_ctx.c", "fd_dedup_during_frag");
+    assert_verified(&out);
+}
