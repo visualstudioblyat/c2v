@@ -625,3 +625,15 @@ fn test_ntt_butterfly() {
     let out = compile_and_verify("examples/fd_ntt_butterfly.c", "fd_ntt_butterfly");
     assert_verified(&out);
 }
+
+#[test]
+fn test_poly1305() {
+    let out = compile_and_verify("examples/fd_poly1305_block.c", "fd_poly1305_block");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_bayer_demosaic() {
+    let out = compile_and_verify("examples/fd_bayer_demosaic.c", "fd_demosaic_pixel");
+    assert_verified(&out);
+}

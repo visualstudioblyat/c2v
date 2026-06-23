@@ -1,6 +1,7 @@
 pub mod avalon_st;
 pub mod axi_stream;
 pub mod cocotb;
+pub mod csr;
 pub mod constraints;
 pub mod pipeline;
 pub mod quartus;
