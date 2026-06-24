@@ -9,6 +9,7 @@ pub mod identity_elim;
 pub mod loop_invariant;
 pub mod mux_simplify;
 pub mod mux_to_case;
+pub mod one_hot_detect;
 pub mod reassociate;
 pub mod strength_reduce;
 pub mod width_narrow;

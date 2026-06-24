@@ -5,6 +5,7 @@ pub mod csr;
 pub mod constraints;
 pub mod fsm_encoding;
 pub mod pipeline;
+pub mod pragma;
 pub mod quartus;
 pub mod report;
 pub mod rtlil;
