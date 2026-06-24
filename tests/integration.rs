@@ -693,3 +693,15 @@ fn test_ethernet_parser() {
     let out = compile_and_verify("examples/fd_ethernet_parser.c", "fd_eth_classify");
     assert_verified(&out);
 }
+
+#[test]
+fn test_cdc_sync() {
+    let out = compile_and_verify("examples/fd_cdc_sync.c", "fd_cdc_handshake");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_sobel() {
+    let out = compile_and_verify("examples/fd_sobel.c", "fd_sobel_magnitude");
+    assert_verified(&out);
+}

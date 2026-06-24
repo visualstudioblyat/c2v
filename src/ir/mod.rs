@@ -1,6 +1,7 @@
 mod build;
 pub mod cost;
 pub mod dot;
+pub mod dual_port_bram;
 pub mod entropy;
 pub mod lifetime;
 pub mod memory;
