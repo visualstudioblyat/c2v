@@ -1,6 +1,7 @@
 mod build;
 pub mod chaining;
 pub mod cost;
+pub mod dependency_graph;
 pub mod dot;
 pub mod dual_port_bram;
 pub mod entropy;
