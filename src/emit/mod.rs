@@ -6,6 +6,7 @@ pub mod csr;
 pub mod constraints;
 pub mod fsm_encoding;
 pub mod ila_probes;
+pub mod latency_insensitive;
 pub mod pipeline;
 pub mod pragma;
 pub mod quartus;

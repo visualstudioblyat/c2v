@@ -754,3 +754,15 @@ fn test_slot_map() {
     let out = compile_and_verify("examples/fd_slot_map.c", "fd_find_free_slot");
     assert_verified(&out);
 }
+
+#[test]
+fn test_hamming() {
+    let out = compile_and_verify("examples/fd_hamming.c", "fd_hamming_distance");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_ecc_correct() {
+    let out = compile_and_verify("examples/fd_ecc_correct.c", "fd_hamming74_correct");
+    assert_verified(&out);
+}
