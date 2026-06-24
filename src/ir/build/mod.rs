@@ -1245,6 +1245,34 @@ impl<'a> DfgBuilder<'a> {
                 self.add_edge(alt_id, mux_id, width);
                 Ok(mux_id)
             }
+            "sizeof_expression" => {
+                /* sizeof(type) or sizeof(expr) — resolve to constant.
+                   For our restricted subset, we know the sizes. */
+                let text = node_text(node, source);
+                let size = if text.contains("ulong") || text.contains("long") || text.contains("uint64") {
+                    8u64
+                } else if text.contains("uint") || text.contains("int") || text.contains("uint32") {
+                    4
+                } else if text.contains("ushort") || text.contains("short") {
+                    2
+                } else if text.contains("uchar") || text.contains("char") {
+                    1
+                } else {
+                    4 /* default to 4 bytes */
+                };
+                Ok(self.add_node(DfgOp::Const(size), 32, line, &format!("sizeof_{size}")))
+            }
+            "comma_expression" => {
+                /* (a, b) — evaluate both, return b */
+                let mut last_id = None;
+                let mut cursor = node.walk();
+                for child in node.children(&mut cursor) {
+                    if child.kind() != "," {
+                        last_id = Some(self.build_expr(child, source, ctx_width)?);
+                    }
+                }
+                last_id.ok_or(DfgBuildError::Unsupported(line, "empty comma expression".to_string()))
+            }
             _ => Err(DfgBuildError::Unsupported(
                 line,
                 format!("expression kind: {}", node.kind()),
