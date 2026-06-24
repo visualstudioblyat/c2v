@@ -705,3 +705,4 @@ fn test_sobel() {
     let out = compile_and_verify("examples/fd_sobel.c", "fd_sobel_magnitude");
     assert_verified(&out);
 }
+
