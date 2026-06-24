@@ -4,6 +4,7 @@ pub mod cocotb;
 pub mod csr;
 pub mod constraints;
 pub mod fsm_encoding;
+pub mod ila_probes;
 pub mod pipeline;
 pub mod pragma;
 pub mod quartus;

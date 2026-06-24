@@ -736,3 +736,9 @@ fn test_rate_limiter() {
     let out = compile_and_verify("examples/fd_rate_limiter.c", "fd_rate_limit_check");
     assert_verified(&out);
 }
+
+#[test]
+fn test_histogram() {
+    let out = compile_and_verify("examples/fd_histogram.c", "fd_histogram_4bin");
+    assert_verified(&out);
+}
