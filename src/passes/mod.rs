@@ -9,6 +9,7 @@ pub mod cse;
 pub mod duplicate_store;
 pub mod identity_elim;
 pub mod loop_invariant;
+pub mod mem_to_reg;
 pub mod mux_simplify;
 pub mod mux_to_case;
 pub mod one_hot_detect;

@@ -6,6 +6,7 @@ pub mod dual_port_bram;
 pub mod entropy;
 pub mod lifetime;
 pub mod memory;
+pub mod reg_alloc;
 pub mod resource_estimate;
 pub mod rom_infer;
 pub mod schedule_info;
