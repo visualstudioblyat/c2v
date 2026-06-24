@@ -681,3 +681,15 @@ fn test_enum_fsm() {
     let out = compile_and_verify("examples/fd_enum_fsm.c", "fd_packet_dispatch");
     assert_verified(&out);
 }
+
+#[test]
+fn test_dma_descriptor() {
+    let out = compile_and_verify("examples/fd_dma_descriptor.c", "fd_dma_process_desc");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_ethernet_parser() {
+    let out = compile_and_verify("examples/fd_ethernet_parser.c", "fd_eth_classify");
+    assert_verified(&out);
+}
