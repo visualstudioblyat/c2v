@@ -3,6 +3,7 @@ pub mod axi_stream;
 pub mod cocotb;
 pub mod csr;
 pub mod constraints;
+pub mod fsm_encoding;
 pub mod pipeline;
 pub mod quartus;
 pub mod report;
