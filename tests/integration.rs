@@ -706,3 +706,21 @@ fn test_sobel() {
     assert_verified(&out);
 }
 
+
+#[test]
+fn test_median5() {
+    let out = compile_and_verify("examples/fd_median5.c", "fd_median5");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_viterbi() {
+    let out = compile_and_verify("examples/fd_viterbi_step.c", "fd_viterbi_acs");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_bloom_filter() {
+    let out = compile_and_verify("examples/fd_bloom_filter.c", "fd_bloom_test");
+    assert_verified(&out);
+}
