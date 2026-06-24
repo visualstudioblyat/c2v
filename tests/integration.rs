@@ -724,3 +724,15 @@ fn test_bloom_filter() {
     let out = compile_and_verify("examples/fd_bloom_filter.c", "fd_bloom_test");
     assert_verified(&out);
 }
+
+#[test]
+fn test_watchdog() {
+    let out = compile_and_verify("examples/fd_watchdog.c", "fd_watchdog_tick");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_rate_limiter() {
+    let out = compile_and_verify("examples/fd_rate_limiter.c", "fd_rate_limit_check");
+    assert_verified(&out);
+}
