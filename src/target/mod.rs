@@ -27,6 +27,33 @@ pub struct TargetUtilization {
     pub bram_pct: f64,
 }
 
+#[derive(Debug, Clone)]
+pub struct TargetSpec {
+    pub name:           String,
+    pub max_freq_mhz:   f64,
+    pub dsp_slices:     u32,
+    pub bram_bits:      u64,
+    pub add_delay_ns:   f64,
+    pub mul_delay_ns:   f64,
+    pub mux_delay_ns:   f64,
+    pub route_delay_ns: f64,
+}
+
+impl TargetSpec {
+    pub fn from_model( model: &dyn TargetModel ) -> Self {
+        TargetSpec {
+            name:           model.name().to_string(),
+            max_freq_mhz:   model.max_freq_mhz(),
+            dsp_slices:     model.max_dsps(),
+            bram_bits:      model.max_bram18() as u64 * 18 * 1024,
+            add_delay_ns:   1000.0 / model.max_freq_mhz() * 0.3,
+            mul_delay_ns:   1000.0 / model.max_freq_mhz() * 0.7,
+            mux_delay_ns:   1000.0 / model.max_freq_mhz() * 0.2,
+            route_delay_ns: 1000.0 / model.max_freq_mhz() * 0.4,
+        }
+    }
+}
+
 pub trait TargetModel {
     fn name(&self) -> &str;
     fn estimate(&self, bound: &BoundDfg) -> TargetReport;

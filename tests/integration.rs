@@ -742,3 +742,15 @@ fn test_histogram() {
     let out = compile_and_verify("examples/fd_histogram.c", "fd_histogram_4bin");
     assert_verified(&out);
 }
+
+#[test]
+fn test_tcp_checksum() {
+    let out = compile_and_verify("examples/fd_tcp_checksum.c", "fd_tcp_checksum_4w");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_slot_map() {
+    let out = compile_and_verify("examples/fd_slot_map.c", "fd_find_free_slot");
+    assert_verified(&out);
+}

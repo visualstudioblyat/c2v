@@ -1,4 +1,5 @@
 pub mod avalon_st;
+pub mod axi4_lite;
 pub mod axi_stream;
 pub mod cocotb;
 pub mod csr;
