@@ -14,7 +14,7 @@
 use std::collections::HashMap;
 use std::fmt::Write;
 
-use crate::ir::{Dfg, DfgOp, NodeId, ScheduledDfg};
+use crate::ir::{DfgOp, ScheduledDfg};
 
 #[derive(Debug, Clone)]
 pub struct BramConfig {
@@ -89,7 +89,7 @@ pub fn analyze_bram_ports( sched: &ScheduledDfg ) -> Vec<BramConfig> {
    inference-friendly pattern that Vivado maps to RAMB18/RAMB36. */
 pub fn emit_bram_instance( config: &BramConfig, indent: &str ) -> String {
     let mut out = String::with_capacity( 1024 );
-    let addr_bits = ((config.depth as f64).log2().ceil() as u32).max(1);
+    let _addr_bits = ((config.depth as f64).log2().ceil() as u32).max(1);
 
     if config.dual_port {
         writeln!( out, "{indent}/* Dual-port BRAM: {name} ({d}x{w}) */",

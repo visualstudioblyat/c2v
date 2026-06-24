@@ -4,7 +4,6 @@
    initialization, rather than requiring runtime store operations.
    This saves cycles (no store phase) and can save area. */
 
-use std::collections::HashSet;
 
 use super::{Dfg, DfgOp, NodeId};
 

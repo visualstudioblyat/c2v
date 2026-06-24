@@ -8,8 +8,6 @@
    These attributes control FSM encoding, RAM style, register
    duplication, and other synthesis decisions. */
 
-use std::fmt::Write;
-
 #[derive(Debug, Clone, Copy)]
 pub enum Vendor {
     Xilinx,
