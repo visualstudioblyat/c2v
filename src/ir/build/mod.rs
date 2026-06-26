@@ -1019,6 +1019,40 @@ impl<'a> DfgBuilder<'a> {
                     }
                 };
 
+                // Constant folding at build time: if both operands
+                // are constants, compute the result immediately
+                let left_const = match &self.nodes[left_id as usize].op {
+                    DfgOp::Const(v) => Some(*v), _ => None,
+                };
+                let right_const = match &self.nodes[right_id as usize].op {
+                    DfgOp::Const(v) => Some(*v), _ => None,
+                };
+                if let (Some(a), Some(b)) = (left_const, right_const) {
+                    let folded = match op_text {
+                        "+"  => Some(a.wrapping_add(b)),
+                        "-"  => Some(a.wrapping_sub(b)),
+                        "*"  => Some(a.wrapping_mul(b)),
+                        "/"  => if b != 0 { Some(a / b) } else { None },
+                        "%"  => if b != 0 { Some(a % b) } else { None },
+                        "<<" => Some(a.wrapping_shl(b as u32)),
+                        ">>" => Some(a.wrapping_shr(b as u32)),
+                        "&"  => Some(a & b),
+                        "|"  => Some(a | b),
+                        "^"  => Some(a ^ b),
+                        "==" => Some(if a == b { 1 } else { 0 }),
+                        "!=" => Some(if a != b { 1 } else { 0 }),
+                        "<"  => Some(if a < b  { 1 } else { 0 }),
+                        ">"  => Some(if a > b  { 1 } else { 0 }),
+                        "<=" => Some(if a <= b { 1 } else { 0 }),
+                        ">=" => Some(if a >= b { 1 } else { 0 }),
+                        _    => None,
+                    };
+                    if let Some(val) = folded {
+                        let w = if is_comparison { 1 } else { operand_width };
+                        return Ok(self.add_node(DfgOp::Const(val), w, line, &format!("c_{val}")));
+                    }
+                }
+
                 let result_width = if is_comparison { 1 } else { operand_width };
                 let signed = self.nodes[left_id as usize].signed
                     || self.nodes[right_id as usize].signed;
