@@ -217,6 +217,9 @@ pub(crate) fn op_latency(op: &DfgOp) -> u32 {
         DfgOp::Div | DfgOp::Mod => 6,
         DfgOp::Load { .. } | DfgOp::Store { .. } => 2,
         DfgOp::Const(_) | DfgOp::Input(_) | DfgOp::Output(_) | DfgOp::Nop => 0,
+        DfgOp::And | DfgOp::Or | DfgOp::Xor | DfgOp::Not => 0,
+        DfgOp::Eq | DfgOp::Ne | DfgOp::Lt | DfgOp::Gt | DfgOp::Le | DfgOp::Ge => 0,
+        DfgOp::Mux => 0,
         _ => 1,
     }
 }

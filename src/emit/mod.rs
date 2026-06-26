@@ -107,11 +107,17 @@ pub fn emit_verilog(bound: &BoundDfg) -> String {
         writeln!(out).unwrap();
     }
 
-    // Datapath registers — only for intermediate computation nodes
-    writeln!(out, "    // Datapath registers").unwrap();
+    // Datapath signals — reg for latency>0 ops, wire for combinational (latency=0)
+    let is_combinational = |node: &crate::ir::DfgNode| -> bool {
+        node.latency == 0 && !matches!(&node.op,
+            DfgOp::Input(_) | DfgOp::Const(_) | DfgOp::Output(_) | DfgOp::Nop)
+    };
+
+    writeln!(out, "    // Registered signals").unwrap();
     for node in &dfg.nodes {
         match &node.op {
             DfgOp::Input(_) | DfgOp::Const(_) | DfgOp::Output(_) | DfgOp::Nop => {}
+            _ if is_combinational(node) => {}
             _ => {
                 let sig = &sig_names[&node.id];
                 let wd = width_decl(node.width);
@@ -121,6 +127,58 @@ pub fn emit_verilog(bound: &BoundDfg) -> String {
                 } else {
                     writeln!(out, "    reg  {sign}{wd}{sig};").unwrap();
                 }
+            }
+        }
+    }
+
+    // Combinational wires + assign statements
+    let mut has_comb = false;
+    for node in &dfg.nodes {
+        if !is_combinational(node) { continue; }
+        if !has_comb {
+            writeln!(out).unwrap();
+            writeln!(out, "    // Combinational signals").unwrap();
+            has_comb = true;
+        }
+        let sig = &sig_names[&node.id];
+        let wd = width_decl(node.width);
+        let sign = if node.signed { "signed " } else { "" };
+        writeln!(out, "    wire {sign}{wd}{sig};").unwrap();
+    }
+    if has_comb {
+        for node in &dfg.nodes {
+            if !is_combinational(node) { continue; }
+            let sig = &sig_names[&node.id];
+            let inputs = get_inputs(node.id, bound);
+            match &node.op {
+                DfgOp::Not if !inputs.is_empty() => {
+                    let a = operand_ref(inputs[0], &sig_names, bound);
+                    writeln!(out, "    assign {sig} = ~{a};").unwrap();
+                }
+                DfgOp::Mux if inputs.len() >= 3 => {
+                    let c = operand_ref(inputs[0], &sig_names, bound);
+                    let t = operand_ref(inputs[1], &sig_names, bound);
+                    let f = operand_ref(inputs[2], &sig_names, bound);
+                    writeln!(out, "    assign {sig} = {c} ? {t} : {f};").unwrap();
+                }
+                _ if verilog_binop(&node.op).is_some() && inputs.len() >= 2 => {
+                    let op_str = verilog_binop(&node.op).unwrap();
+                    let is_cmp = matches!(&node.op,
+                        DfgOp::Lt | DfgOp::Gt | DfgOp::Le | DfgOp::Ge);
+                    let use_signed = is_cmp && node.signed;
+                    let l = if use_signed {
+                        signed_operand_ref(inputs[0], &sig_names, bound)
+                    } else {
+                        operand_ref(inputs[0], &sig_names, bound)
+                    };
+                    let r = if use_signed {
+                        signed_operand_ref(inputs[1], &sig_names, bound)
+                    } else {
+                        operand_ref(inputs[1], &sig_names, bound)
+                    };
+                    writeln!(out, "    assign {sig} = {l} {op_str} {r};").unwrap();
+                }
+                _ => {}
             }
         }
     }
@@ -147,11 +205,13 @@ pub fn emit_verilog(bound: &BoundDfg) -> String {
     for cycle in 0..bound.scheduled.total_cycles {
         writeln!(out, "                S_C{cycle}: begin").unwrap();
 
-        // Emit all operations scheduled in this cycle
+        // Emit all registered operations scheduled in this cycle
+        // (combinational ops are handled by assign statements above)
         for node in &dfg.nodes {
             if bound.scheduled.schedule.get(&node.id) != Some(&cycle) {
                 continue;
             }
+            if is_combinational(node) { continue; }
             match &node.op {
                 DfgOp::Input(_) | DfgOp::Const(_) | DfgOp::Nop => {}
                 DfgOp::Output(name) => {

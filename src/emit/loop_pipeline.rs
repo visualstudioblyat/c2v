@@ -19,7 +19,7 @@ use std::fmt::Write;
 
 use crate::ir::{BoundDfg, DfgOp, NodeId};
 use super::{get_inputs, verilog_safe_name, width_decl, build_signal_names,
-            verilog_binop, operand_ref};
+            verilog_binop};
 
 pub struct LoopPipelineConfig {
     pub ii:             u32,
