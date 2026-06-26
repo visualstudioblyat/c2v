@@ -981,10 +981,14 @@ impl<'a> DfgBuilder<'a> {
                 let op_node = node.child_by_field_name("operator").unwrap();
                 let op_text = node_text(op_node, source);
 
-                let left_id = self.build_expr(left, source, ctx_width)?;
-                let right_id = self.build_expr(right, source, ctx_width)?;
+                let is_comparison = matches!(op_text,
+                    "==" | "!=" | "<" | ">" | "<=" | ">=" | "&&" | "||");
 
-                let width = self.nodes[left_id as usize]
+                let operand_ctx = if is_comparison { 32 } else { ctx_width };
+                let left_id = self.build_expr(left, source, operand_ctx)?;
+                let right_id = self.build_expr(right, source, operand_ctx)?;
+
+                let operand_width = self.nodes[left_id as usize]
                     .width
                     .max(self.nodes[right_id as usize].width);
 
@@ -1015,11 +1019,12 @@ impl<'a> DfgBuilder<'a> {
                     }
                 };
 
+                let result_width = if is_comparison { 1 } else { operand_width };
                 let signed = self.nodes[left_id as usize].signed
                     || self.nodes[right_id as usize].signed;
-                let result_id = self.add_node_signed(op, width, signed, line, op_name);
-                self.add_edge(left_id, result_id, width);
-                self.add_edge(right_id, result_id, width);
+                let result_id = self.add_node_signed(op, result_width, signed, line, op_name);
+                self.add_edge(left_id, result_id, operand_width);
+                self.add_edge(right_id, result_id, operand_width);
                 Ok(result_id)
             }
             "unary_expression" => {

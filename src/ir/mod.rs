@@ -1,11 +1,16 @@
 mod build;
+pub mod array_partition;
 pub mod chaining;
 pub mod cost;
+pub mod critical_path;
+pub mod data_hazard;
 pub mod dependency_graph;
 pub mod dot;
+pub mod dsp_infer;
 pub mod dual_port_bram;
 pub mod entropy;
 pub mod lifetime;
+pub mod loop_detect;
 pub mod memory;
 pub mod reg_alloc;
 pub mod resource_estimate;

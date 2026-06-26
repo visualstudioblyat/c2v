@@ -1,0 +1,16 @@
+c2v AoC-Style Benchmark — Fri Jun 26 01:19:11 AM PDT 2026
+Jane Street Advent of Hardcaml methodology
+=============================================
+Problem                Cycles   LUTs    FFs   DSPs Time(ms) Verify
+---------------------------------------------
+aoc_sum_8                   5    134    131      0     1080 ✓ 1000/1000
+aoc_is_safe_4              10    204    196      0     1373 ✓ 1000/1000
+aoc_mul_sum_4               7     72    324      4     1209 ✓ 1000/1000
+aoc_match_pattern           5     10      3      0     1160 ✓ 1000/1000
+aoc_check_order             4     71      3      0     1133 ✓ 1000/1000
+aoc_guard_step             10    428    196      0     1148 ✓ 1000/1000
+---------------------------------------------
+
+Compile time is c2v end-to-end (parse+schedule+bind+emit+verify).
+All designs verified correct against C semantics (1000 random vectors).
+LUT/FF counts are c2v estimates. Run --synth for Yosys gate counts.

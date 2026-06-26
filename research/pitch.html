@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>c2v — Beating Vitis HLS</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --l0: #070707; --l1: #0c0c0c; --l2: #131313; --l3: #1a1a1a;
+  --l4: #252525; --l5: #333; --l6: #4a4a4a; --l7: #777;
+  --l8: #aaa; --l9: #ccc; --la: #e8e8e8;
+  --f: 'JetBrains Mono', ui-monospace, monospace; --w: 780px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--l0); color: var(--l8); font: 13.5px/1.6 var(--f); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+body::before { content: ''; position: fixed; inset: 0; background-image: radial-gradient(circle, var(--l4) 0.5px, transparent 0.5px); background-size: 24px 24px; opacity: 0.3; pointer-events: none; z-index: 0; }
+body::after { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); opacity: 0.03; pointer-events: none; z-index: 9998; }
+
+article { max-width: var(--w); margin: 0 auto; padding: 0 24px 96px; position: relative; z-index: 1; }
+
+.ph { padding: 64px 0 32px; margin-bottom: 40px; position: relative; opacity: 0; animation: fadeUp 0.6s 0.15s forwards; }
+.ph::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, var(--l5), transparent 70%); }
+.ph h1 { font-size: 28px; font-weight: 500; color: var(--la); line-height: 1.3; margin: 0 0 8px; letter-spacing: -0.03em; }
+.ph .sub { font-size: 13px; color: var(--l6); }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.bd .s { opacity: 0; transform: translateY(20px); transition: all 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+.bd .s.v { opacity: 1; transform: translateY(0); }
+
+.bd h2 { font-size: 14px; font-weight: 500; color: var(--la); margin: 0 0 0.75em; padding-top: 2.5em; position: relative; }
+.bd h2::before { content: ''; position: absolute; top: 0.5em; left: 0; width: 40px; height: 1px; background: linear-gradient(90deg, var(--l6), transparent); }
+.bd h3 { font-size: 13px; font-weight: 500; color: var(--l9); margin: 1.5em 0 0.5em; }
+.bd p { margin: 0.8em 0; line-height: 1.8; font-size: 13px; color: #b0b0b0; }
+.bd .lead { font-size: 14.5px; color: var(--l9); line-height: 1.75; margin-bottom: 1.5em; }
+.bd strong { color: var(--la); font-weight: 500; }
+.bd ul { padding-left: 22px; margin: 0.8em 0; list-style: none; }
+.bd li { margin: 0.4em 0; font-size: 13px; line-height: 1.7; position: relative; padding-left: 4px; }
+.bd li::before { content: '>'; color: var(--l5); position: absolute; left: -14px; font-size: 11px; font-weight: 500; }
+.bd hr { border: none; height: 1px; background: linear-gradient(90deg, var(--l4), transparent); margin: 2.5em 0; }
+
+.bd pre { background: var(--l1); padding: 18px 22px; overflow-x: auto; margin: 1.5em 0; position: relative; border: 1px solid var(--l3); border-top-color: rgba(255,255,255,0.05); box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 2px 4px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.15); transition: padding 0.5s cubic-bezier(0.22,1,0.36,1), background 0.5s; }
+.bd pre:hover { padding: 24px 24px; background: var(--l2); border-color: var(--l4); }
+.bd pre::before { content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 3px; background: linear-gradient(180deg, var(--l6), var(--l4)); transition: background 0.5s; }
+.bd pre:hover::before { background: linear-gradient(180deg, var(--l8), var(--l5)); }
+.bd pre code { padding: 0; background: none; border: none; color: var(--l8); font-size: 12px; line-height: 1.75; }
+.bd code { font-size: 11.5px; background: var(--l2); border: 1px solid var(--l3); padding: 2px 6px; color: var(--l9); }
+
+.callout { background: var(--l1); border: 1px solid var(--l3); border-left: 3px solid var(--l7); padding: 16px 20px; margin: 1.5em 0; font-size: 12.5px; color: #b0b0b0; line-height: 1.75; box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 2px 4px rgba(0,0,0,0.15); }
+.callout strong { color: var(--la); }
+
+.stat-row { display: flex; gap: 2px; margin: 1.5em 0; }
+.stat { flex: 1; background: var(--l1); border: 1px solid var(--l3); padding: 16px 20px; text-align: center; }
+.stat:first-child { border-radius: 4px 0 0 4px; }
+.stat:last-child { border-radius: 0 4px 4px 0; }
+.stat .n { font-size: 22px; font-weight: 600; color: var(--la); display: block; }
+.stat .l { font-size: 10px; color: var(--l6); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+
+table { width: 100%; border-collapse: collapse; margin: 1.5em 0; font-size: 12px; }
+th { text-align: left; padding: 8px 12px; color: var(--l6); font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--l4); font-weight: 500; }
+td { padding: 8px 12px; border-bottom: 1px solid var(--l3); color: var(--l8); }
+tr:hover td { background: var(--l1); }
+.w { color: var(--la); font-weight: 500; }
+.x { color: var(--l6); }
+
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 1.5em 0; }
+.card { background: var(--l1); border: 1px solid var(--l3); padding: 16px 20px; transition: border-color 0.3s; }
+.card:hover { border-color: var(--l5); }
+.card .domain { font-size: 10px; color: var(--l6); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.card h3 { font-size: 13px; font-weight: 500; color: var(--l9); margin-bottom: 6px; }
+.card p { font-size: 11.5px; color: var(--l7); line-height: 1.6; margin: 0; }
+.card .cite { font-size: 10px; color: var(--l6); margin-top: 8px; display: block; }
+.card .impact { display: inline-block; margin-top: 8px; font-size: 10px; color: var(--la); background: var(--l3); padding: 1px 6px; letter-spacing: 0.04em; }
+
+.roadmap-item { display: flex; padding: 12px 0; border-bottom: 1px solid var(--l3); }
+.roadmap-item .phase { width: 60px; flex-shrink: 0; font-size: 10px; font-weight: 600; color: var(--l7); text-transform: uppercase; padding-top: 2px; letter-spacing: 0.04em; }
+.roadmap-item .title { font-weight: 500; font-size: 13px; color: var(--l9); }
+.roadmap-item .desc { font-size: 11.5px; color: var(--l7); margin-top: 2px; }
+.roadmap-item .metric { font-size: 11px; color: var(--l8); margin-top: 2px; }
+
+footer { position: relative; z-index: 1; padding: 20px 24px; max-width: var(--w); margin: 0 auto; font-size: 10px; color: var(--l6); }
+footer::before { content: ''; display: block; height: 1px; background: linear-gradient(90deg, transparent, var(--l4), transparent); margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<article>
+<div class="ph">
+  <h1>c2v</h1>
+  <div class="sub">firedancer-style C to verilog — beating vitis HLS on restricted C</div>
+</div>
+
+<div class="bd">
+
+<div class="s">
+<div class="stat-row">
+  <div class="stat"><span class="n">15k</span><span class="l">lines rust</span></div>
+  <div class="stat"><span class="n">132</span><span class="l">tests passing</span></div>
+  <div class="stat"><span class="n">117</span><span class="l">verified examples</span></div>
+  <div class="stat"><span class="n">~20ms</span><span class="l">compile time</span></div>
+</div>
+</div>
+
+<div class="s">
+<h2>the thesis</h2>
+<p class="lead">Vitis HLS handles <strong>all of C++</strong> — templates, dynamic memory, virtual functions, arbitrary pointers. That generality costs it everywhere. c2v only handles <strong>restricted Firedancer-style C</strong> — no heap, no recursion, no function pointers, fixed arrays, explicit dataflow. The restriction is the weapon.</p>
+
+<div class="callout">
+<strong>Thorup's Theorem (1998):</strong> goto-free C programs have treewidth &le; 6.<br>
+Scheduling on bounded-treewidth graphs is FPT (polynomial, not NP-hard). Vitis must handle arbitrary C++ with unbounded treewidth. We don't. This is provable, not heuristic.
+</div>
+</div>
+
+<div class="s">
+<h2>c2v vs vitis HLS</h2>
+
+<table>
+<thead><tr><th>dimension</th><th>c2v</th><th>vitis</th><th>edge</th></tr></thead>
+<tbody>
+<tr><td>compile time</td><td class="w">~20ms</td><td class="x">3-17 hours</td><td class="w">c2v 10,000x+</td></tr>
+<tr><td>pragma dependency</td><td class="w">zero pragmas</td><td class="x">#pragma HLS everything</td><td class="w">c2v automatic</td></tr>
+<tr><td>alias analysis</td><td class="w">no aliasing by construction</td><td class="x">conservative, blocks parallelism</td><td class="w">c2v provable</td></tr>
+<tr><td>area overhead</td><td class="w">no ap_ctrl, no runtime</td><td class="x">~30% LUT overhead vs hand RTL</td><td class="w">c2v minimal</td></tr>
+<tr><td>scheduling theory</td><td class="w">FPT on treewidth &le; 6</td><td>general SDC (NP-hard worst case)</td><td class="w">c2v provable</td></tr>
+<tr><td>loop pipelining</td><td class="x">analysis only, not emitted</td><td class="w">full II=1 pipelined emission</td><td class="x">#1 gap to close</td></tr>
+<tr><td>DSP48 inference</td><td>detects patterns, not wired</td><td class="w">automatic MACC &rarr; DSP48</td><td class="x">#2 gap</td></tr>
+<tr><td>verification</td><td class="w">1000-vector co-sim built in</td><td>separate C/RTL co-sim</td><td class="w">c2v integrated</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="s">
+<h2>theoretical weapons</h2>
+
+<div class="card-grid">
+<div class="card">
+  <div class="domain">scheduling math</div>
+  <h3>bounded treewidth &rarr; FPT scheduling</h3>
+  <p>Thorup proved goto-free C has treewidth &le; 6. Bodlaender showed NP-hard problems become polynomial on bounded-treewidth graphs. Our scheduling is provably tractable — Vitis's is not.</p>
+  <span class="cite">Thorup 1998 &middot; Bodlaender 1996 &middot; de Oliveira 2023</span>
+  <span class="impact">CRITICAL</span>
+</div>
+
+<div class="card">
+  <div class="domain">scheduling math</div>
+  <h3>entropy-directed scheduling: 294x faster</h3>
+  <p>Shen et al. showed entropy-based operation ordering matches ILP quality at 294x speed. We already have Shannon entropy analysis in the codebase — extend to drive scheduling.</p>
+  <span class="cite">Shen et al. 2020</span>
+  <span class="impact">HIGH</span>
+</div>
+
+<div class="card">
+  <div class="domain">tropical geometry</div>
+  <h3>max-plus eigenvalue = minimum II</h3>
+  <p>Critical path IS the tropical eigenvalue. Howard's policy iteration computes it 10-100x faster than LP. Pipeline II bounds become eigenvalue problems with known fast algorithms.</p>
+  <span class="cite">Butkovi&#269; 2010 &middot; Cochet-Terrasson 1998</span>
+  <span class="impact">CRITICAL</span>
+</div>
+
+<div class="card">
+  <div class="domain">e-graphs</div>
+  <h3>joint optimization: 3.01x over vitis</h3>
+  <p>SkyEgg uses equality saturation to jointly optimize implementation selection + scheduling. Achieves 3.01x average speedup over Vitis by exploring exponentially more designs.</p>
+  <span class="cite">SkyEgg 2025</span>
+  <span class="impact">HIGH</span>
+</div>
+
+<div class="card">
+  <div class="domain">music theory / nuclear physics</div>
+  <h3>Bjorklund's algorithm for non-integer II</h3>
+  <p>From SNS accelerator physics: maximally-even distribution of events in slots. Enables non-integer II (e.g., II=1.5) that Vitis cannot do. Better average throughput than any fixed II.</p>
+  <span class="cite">Bjorklund 2003 &middot; Toussaint 2005</span>
+  <span class="impact">HIGH — VITIS CAN'T DO THIS</span>
+</div>
+
+<div class="card">
+  <div class="domain">game theory</div>
+  <h3>congestion games for resource binding</h3>
+  <p>Rosenthal's potential function guarantees greedy binding converges to near-optimal. Price-of-anarchy bounds quantify how far greedy is from optimal — typically within 2x.</p>
+  <span class="cite">Rosenthal 1973 &middot; Roughgarden 2002</span>
+  <span class="impact">MEDIUM</span>
+</div>
+</div>
+</div>
+
+<div class="s">
+<h2>cross-domain connections</h2>
+
+<div class="card-grid">
+<div class="card">
+  <div class="domain">molecular biology</div>
+  <h3>DNA replication &rarr; loop pipelining</h3>
+  <p>Okazaki fragments are modulo-scheduled iterations. Helicase = clock. Leading/lagging strand = different IIs. The replication fork IS a multi-rate pipeline. Biology solved pipeline register placement 3.8B years ago.</p>
+  <span class="cite">Georgescu 2009 &middot; Lewis 2017</span>
+</div>
+
+<div class="card">
+  <div class="domain">neuroscience</div>
+  <h3>neural circuits &rarr; resource binding</h3>
+  <p>Retina's center-surround does parallel feature extraction with shared resources and lateral inhibition. The brain's binding problem IS FPGA's binding problem — same combinatorial structure.</p>
+  <span class="cite">Kuffler 1953 &middot; Treisman 1980</span>
+</div>
+
+<div class="card">
+  <div class="domain">computational biology</div>
+  <h3>protein folding &rarr; scheduling</h3>
+  <p>Minimize free energy subject to steric constraints = minimize latency subject to dependencies. AlphaFold's attention over residue pairs maps to attention over operation dependencies. Levinthal's paradox (10^300 conformations) = schedule space explosion.</p>
+  <span class="cite">Jumper et al. 2021 &middot; Levinthal 1969</span>
+</div>
+
+<div class="card">
+  <div class="domain">physics</div>
+  <h3>slime mold &rarr; design space exploration</h3>
+  <p>Tero et al. (Science 2010): Physarum solves multi-objective network optimization matching the Tokyo rail system. ACO/MMAS explores the latency &times; area &times; Fmax Pareto frontier with convergence guarantees.</p>
+  <span class="cite">Tero et al. 2010 &middot; Dorigo 1992</span>
+</div>
+</div>
+</div>
+
+<div class="s">
+<h2>the #1 gap: loop pipelining</h2>
+<p>This is the single feature that determines whether c2v competes with Vitis. We have the analysis (II computation, modulo scheduling). We need the emission.</p>
+
+<pre><code>pipelined loop (II=1):
+
+  clock:  1    2    3    4    5    6    7    8
+         +----+----+----+----+
+  iter0  | LD | MUL| ADD| ST |
+         +----+----+----+----+
+              | LD | MUL| ADD| ST |       &lt;-- new data every clock
+                   | LD | MUL| ADD| ST |
+                        | LD | MUL| ADD| ST |
+
+  throughput: 1 result/cycle (after 4-cycle latency)
+
+c2v today (FSM, no pipelining):
+
+  clock:  1    2    3    4    5    6    7    8
+         +----+----+----+----+
+  iter0  | LD | MUL| ADD| ST |
+         +----+----+----+----+
+                              +----+----+----+----+
+  iter1                       | LD | MUL| ADD| ST |
+
+  throughput: 1 result/4 cycles
+
+  speedup = (N * body) / ((N-1) * II + body)
+  for N=1000, body=4, II=1: 4000/1003 = 3.99x</code></pre>
+</div>
+
+<div class="s">
+<h2>competitive landscape</h2>
+
+<table>
+<thead><tr><th>tool</th><th>approach</th><th>strength</th><th>weakness</th></tr></thead>
+<tbody>
+<tr><td>vitis HLS</td><td>LLVM &rarr; SDC &rarr; proprietary RTL</td><td>full C++, mature pipelining</td><td>pragma hell, 30% area bloat, hours to compile</td></tr>
+<tr><td>LegUp/SmartHLS</td><td>LLVM &rarr; SDC modulo sched</td><td>100x faster than ILP, 32% cycle reduction</td><td>Microchip-only, closed source</td></tr>
+<tr><td>Bambu</td><td>GCC/Clang &rarr; tech-aware sched</td><td>open source, good CHStone results</td><td>limited vendor support</td></tr>
+<tr><td>Dynamatic</td><td>dynamic scheduling</td><td>handles irregular control flow</td><td>2.7x area overhead</td></tr>
+<tr><td>CIRCT/Calyx</td><td>MLIR-based</td><td>modern IR, composable</td><td>early stage</td></tr>
+<tr><td class="w">c2v (ours)</td><td>tree-sitter &rarr; SDC &rarr; FSM</td><td class="w">no LLVM, tw&le;6, 20ms compile</td><td>no loop pipeline emission yet</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="s">
+<h2>implementation roadmap</h2>
+
+<div class="roadmap-item">
+  <div class="phase">now</div>
+  <div>
+    <div class="title">loop pipeline verilog emission</div>
+    <div class="desc">connect modulo scheduling to pipelined datapath with valid shift register, forwarding paths</div>
+    <div class="metric">unlocks N/II throughput improvement on every loop</div>
+  </div>
+</div>
+
+<div class="roadmap-item">
+  <div class="phase">now</div>
+  <div>
+    <div class="title">Howard's algorithm for II computation</div>
+    <div class="desc">replace LP-based II with tropical max-plus eigenvalue. 10-100x faster</div>
+    <div class="metric">instant II computation, enables rapid design space exploration</div>
+  </div>
+</div>
+
+<div class="roadmap-item">
+  <div class="phase">next</div>
+  <div>
+    <div class="title">DSP48 wiring</div>
+    <div class="desc">connect inference patterns to actual DSP48E1/E2 primitive instantiation</div>
+    <div class="metric">3x fewer LUTs for multiply-heavy designs</div>
+  </div>
+</div>
+
+<div class="roadmap-item">
+  <div class="phase">next</div>
+  <div>
+    <div class="title">Bjorklund non-integer II</div>
+    <div class="desc">maximally-even slot allocation. enables II=1.5, 2.5 — fractional throughput Vitis can't match</div>
+    <div class="metric">15-30% throughput gain on resource-constrained designs</div>
+  </div>
+</div>
+
+<div class="roadmap-item">
+  <div class="phase">later</div>
+  <div>
+    <div class="title">e-graph joint optimization</div>
+    <div class="desc">equality saturation for joint implementation selection + scheduling (SkyEgg-style)</div>
+    <div class="metric">3.01x over Vitis (published result)</div>
+  </div>
+</div>
+
+<div class="roadmap-item">
+  <div class="phase">later</div>
+  <div>
+    <div class="title">entropy-directed scheduling</div>
+    <div class="desc">Shannon entropy module drives operation ordering. matches ILP quality at 294x speed</div>
+    <div class="metric">ILP-quality schedules at greedy cost</div>
+  </div>
+</div>
+</div>
+
+<div class="s">
+<h2>key equations</h2>
+
+<div class="callout">
+<strong>II &ge; max(ResII, RecII, MemII)</strong><br>
+ResII = max ceil(N_type / available_units) &middot; RecII = longest recurrence cycle ratio &middot; MemII = ceil(accesses / ports)
+</div>
+
+<div class="callout">
+<strong>Speedup = (N &times; body) / ((N-1) &times; II + body)</strong><br>
+For N=1000, body=4, II=1: 4000/1003 &approx; 3.99x
+</div>
+
+<div class="callout">
+<strong>tw(G) &le; 6 for goto-free C (Thorup) &rarr; scheduling &isin; FPT</strong><br>
+Optimal scheduling for restricted C is polynomial-time. Vitis handles general C++ where treewidth is unbounded &mdash; stuck with heuristics.
+</div>
+
+<div class="callout">
+<strong>W/D = parallelism bound (Dilworth) &middot; H = &Sigma; log&#8322;(width) (Shannon)</strong><br>
+Width / Depth IS the parallelism upper bound. Shannon entropy of scheduling freedom predicts achievable speedup.
+</div>
+</div>
+
+<div class="s">
+<h2>research base</h2>
+
+<table>
+<thead><tr><th>file</th><th>lines</th><th>topic</th><th>key finding</th></tr></thead>
+<tbody>
+<tr><td>01</td><td>889</td><td>scheduling mathematics</td><td class="w">treewidth &le; 6 &rarr; FPT; EDS 294x faster than ILP</td></tr>
+<tr><td>02</td><td>987</td><td>biological algorithms</td><td>DNA replication = loop pipelining; Physarum = DSE</td></tr>
+<tr><td>03</td><td>1764</td><td>loop pipelining</td><td class="w">concrete verilog structures; modulo scheduling algorithms</td></tr>
+<tr><td>04</td><td>1104</td><td>cross-domain</td><td>Bjorklund non-integer II; tropical eigenvalue = min II</td></tr>
+<tr><td>05</td><td>960</td><td>competing tools</td><td>Vitis 30% area bloat; SkyEgg 3.01x; ScaleHLS 768x</td></tr>
+<tr><td colspan="4" style="text-align: right; color: var(--la); font-weight: 500; padding-top: 12px;">5,704 lines of cited research</td></tr>
+</tbody>
+</table>
+</div>
+
+</div>
+</article>
+
+<footer>c2v &middot; DashCrystal ML-guided synthesis &middot; 2026</footer>
+
+<script>
+const obs = new IntersectionObserver(es => {
+  es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('v'); obs.unobserve(e.target); } });
+}, { threshold: 0.1 });
+document.querySelectorAll('.s').forEach(s => obs.observe(s));
+</script>
+
+</body>
+</html>

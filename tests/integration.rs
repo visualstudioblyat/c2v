@@ -180,23 +180,18 @@ fn test_reject_malloc() {
 
 #[test]
 fn test_balance_sum16() {
-    let unbalanced = compile_and_verify("examples/fd_sum16.c", "fd_sum16");
-    let balanced = compile_with_balance("examples/fd_sum16.c", "fd_sum16");
-    assert_verified(&unbalanced);
-    assert_verified(&balanced);
-    let cyc_before = extract_cycles(&unbalanced);
-    let cyc_after = extract_cycles(&balanced);
-    assert!(cyc_after < cyc_before, "balance should reduce cycles: {cyc_before} -> {cyc_after}");
+    let out = compile_and_verify("examples/fd_sum16.c", "fd_sum16");
+    assert_verified(&out);
+    let cyc = extract_cycles(&out);
+    assert!(cyc <= 12, "balanced sum16 should be <=12 cycles, got {cyc}");
 }
 
 #[test]
 fn test_balance_fir() {
-    let unbalanced = compile_and_verify("examples/fd_fir8.c", "fd_fir8_compute");
-    let balanced = compile_with_balance("examples/fd_fir8.c", "fd_fir8_compute");
-    assert_verified(&balanced);
-    let cyc_before = extract_cycles(&unbalanced);
-    let cyc_after = extract_cycles(&balanced);
-    assert!(cyc_after < cyc_before, "balance should reduce cycles: {cyc_before} -> {cyc_after}");
+    let out = compile_and_verify("examples/fd_fir8.c", "fd_fir8_compute");
+    assert_verified(&out);
+    let cyc = extract_cycles(&out);
+    assert!(cyc <= 12, "balanced fir8 should be <=12 cycles, got {cyc}");
 }
 
 #[test]
@@ -765,4 +760,167 @@ fn test_hamming() {
 fn test_ecc_correct() {
     let out = compile_and_verify("examples/fd_ecc_correct.c", "fd_hamming74_correct");
     assert_verified(&out);
+}
+
+#[test]
+fn test_barrel_shift() {
+    let out = compile_and_verify("examples/fd_barrel_shift.c", "fd_barrel_shift");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_endian_swap() {
+    let out = compile_and_verify("examples/fd_endian_swap.c", "fd_bswap32");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_round_robin() {
+    let out = compile_and_verify("examples/fd_round_robin.c", "fd_rr_arbiter");
+    assert_verified(&out);
+}
+
+// ─── AoC / Competitive programming ───
+
+#[test]
+fn test_gcd() {
+    let out = compile_and_verify("examples/fd_gcd.c", "fd_gcd");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_collatz() {
+    let out = compile_and_verify("examples/fd_collatz.c", "fd_collatz_steps");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_hamming_dist() {
+    let out = compile_and_verify("examples/fd_hamming_dist.c", "fd_hamming_dist");
+    assert_verified(&out);
+}
+
+#[test]
+#[ignore] // SDC solver grinds on 32-iteration unrolled loop — needs loop pipelining
+fn test_fibonacci() {
+    let out = compile_and_verify("examples/fd_fibonacci.c", "fd_fibonacci");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_prefix_sum() {
+    let out = compile_and_verify("examples/fd_prefix_sum.c", "fd_prefix_sum_8");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_matrix_det2x2() {
+    let out = compile_and_verify("examples/fd_matrix_det2x2.c", "fd_det2x2");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_levenshtein_row() {
+    let out = compile_and_verify("examples/fd_levenshtein_row.c", "fd_lev_row");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_roman_numeral() {
+    let out = compile_and_verify("examples/fd_roman_numeral.c", "fd_roman_encode");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_binary_search() {
+    let out = compile_and_verify("examples/fd_binary_search.c", "fd_binary_search_16");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_bitreverse() {
+    let out = compile_and_verify("examples/fd_bitreverse.c", "fd_bitreverse32");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_cross_product() {
+    let out = compile_and_verify("examples/fd_cross_product.c", "fd_cross_z");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_ctz() {
+    let out = compile_and_verify("examples/fd_ctz.c", "fd_ctz32");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_manhattan() {
+    let out = compile_and_verify("examples/fd_manhattan.c", "fd_manhattan");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_interval_overlap() {
+    let out = compile_and_verify("examples/fd_interval_overlap.c", "fd_interval_overlap");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_base_convert() {
+    let out = compile_and_verify("examples/fd_base_convert.c", "fd_to_bcd");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_sort4() {
+    let out = compile_and_verify("examples/fd_sort4.c", "fd_sort4_packed");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_count_ones_8() {
+    let out = compile_and_verify("examples/fd_count_ones_8.c", "fd_count_ones_8");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_majority5() {
+    let out = compile_and_verify("examples/fd_majority.c", "fd_majority5");
+    assert_verified(&out);
+}
+
+// ─── Analysis features ───
+
+#[test]
+fn test_dsp_inference() {
+    let out_path = unique_output("dsp", ".v");
+    let (_, stderr, success) = c2v(&[
+        "examples/fd_pipe_mac.c", "-f", "fd_pipe_mac", "--dsp", "-o", &out_path,
+    ]);
+    let _ = std::fs::remove_file(&out_path);
+    assert!(success, "c2v failed:\n{stderr}");
+    assert!(stderr.contains("DSP slices"), "should show DSP report:\n{stderr}");
+}
+
+#[test]
+fn test_critical_path() {
+    let out_path = unique_output("crit", ".v");
+    let (_, stderr, success) = c2v(&[
+        "examples/fd_hash_round.c", "-f", "fd_hash_round", "--critical-path", "-o", &out_path,
+    ]);
+    let _ = std::fs::remove_file(&out_path);
+    assert!(success, "c2v failed:\n{stderr}");
+    assert!(stderr.contains("critical path"), "should show critical path:\n{stderr}");
+}
+
+#[test]
+fn test_array_partition() {
+    let out_path = unique_output("apart", ".v");
+    let (_, stderr, success) = c2v(&[
+        "examples/fd_fir8.c", "-f", "fd_fir8", "--array-partition", "-o", &out_path,
+    ]);
+    let _ = std::fs::remove_file(&out_path);
+    assert!(success, "c2v failed:\n{stderr}");
 }

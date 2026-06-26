@@ -1,6 +1,7 @@
 pub mod bit_narrow;
 pub mod chain_combine;
 pub mod constant_prop;
+pub mod copy_prop;
 pub mod dead_mux_elim;
 pub mod dead_node;
 pub mod const_fold;
@@ -9,11 +10,15 @@ pub mod cse;
 pub mod duplicate_store;
 pub mod identity_elim;
 pub mod loop_invariant;
+pub mod loop_unroll;
 pub mod mem_to_reg;
 pub mod mux_simplify;
 pub mod mux_to_case;
 pub mod one_hot_detect;
+pub mod operator_merge;
 pub mod reassociate;
+pub mod retiming;
+pub mod share_mux;
 pub mod strength_reduce;
 pub mod width_narrow;
 

@@ -1,5 +1,8 @@
 pub mod alap;
+pub mod bjorklund;
+pub mod howard;
 pub mod list;
+pub mod mem_port;
 pub mod mobility;
 pub mod modulo_schedule;
 pub mod pipeline_emit;

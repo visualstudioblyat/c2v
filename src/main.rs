@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 mod bench;
+mod bench_harness;
 mod bind;
 mod debug;
 mod emit;
@@ -120,6 +121,38 @@ struct Cli {
     /// Analyze loop pipelining potential (show II, recurrence, speedup)
     #[arg(long)]
     pipeline_analysis: bool,
+
+    /// Show DSP48 inference results
+    #[arg(long)]
+    dsp: bool,
+
+    /// Show critical path analysis
+    #[arg(long)]
+    critical_path: bool,
+
+    /// Show array partitioning analysis
+    #[arg(long)]
+    array_partition: bool,
+
+    /// Use Howard's algorithm for II computation (max-plus eigenvalue)
+    #[arg(long)]
+    howard: bool,
+
+    /// Show Bjorklund non-integer II analysis
+    #[arg(long)]
+    bjorklund: bool,
+
+    /// Emit as pipelined loop with iteration counter (parameterized N)
+    #[arg(long)]
+    loop_pipeline: bool,
+
+    /// Trip count for loop pipeline (default 1024)
+    #[arg(long, default_value = "1024")]
+    trip_count: u32,
+
+    /// Initiation interval for loop pipeline (default 1)
+    #[arg(long, default_value = "1")]
+    ii: u32,
 }
 
 fn main() {
@@ -273,27 +306,34 @@ fn main() {
     pipeline.add(Box::new(passes::chain_combine::ChainCombine));
     pipeline.add(Box::new(passes::duplicate_store::DuplicateStoreElimination));
     pipeline.add(Box::new(passes::dead_node::DeadNodeElimination));
+    pipeline.add(Box::new(passes::copy_prop::CopyPropagation));
+    pipeline.add(Box::new(passes::operator_merge::OperatorMerge));
+    pipeline.add(Box::new(passes::share_mux::ShareMux));
+    pipeline.add(Box::new(passes::retiming::Retiming));
+    pipeline.add(Box::new(passes::loop_unroll::LoopUnroll));
+    pipeline.add(Box::new(passes::const_fold::ConstantFolding));
+    pipeline.add(Box::new(passes::dead_node::DeadNodeElimination));
     pipeline.add(Box::new(passes::width_narrow::WidthNarrowing));
 
-    let dfg = if cli.balance {
-        let t0 = Instant::now();
-        let balanced = ir::tree_balance::balance_reduction_trees(dfg);
-        let n_new = balanced.nodes.iter().filter(|n| !matches!(n.op, ir::DfgOp::Nop)).count();
-        eprintln!("[balance]   {} ops (depth reduced){:>14}", n_new, format!("✓  {:?}", t0.elapsed()));
+    // Tree balancing is always on — reduces associative reduction
+    // chain depth from O(n) to O(log n). The --balance flag now
+    // only controls verbose output.
+    let t0_bal = Instant::now();
+    let dfg = ir::tree_balance::balance_reduction_trees(dfg);
+    let n_balanced = dfg.nodes.iter().filter(|n| !matches!(n.op, ir::DfgOp::Nop)).count();
+    if cli.balance || n_balanced != n_ops_raw {
+        eprintln!("[balance]   {} ops (depth reduced){:>14}", n_balanced, format!("✓  {:?}", t0_bal.elapsed()));
+    }
 
-        if cli.entropy {
-            let post = ir::entropy::analyze_parallelism(&balanced);
-            eprintln!("[entropy]   after: depth={} (was {}) | predicted {:.2}x, actual depth reduction {:.2}x",
-                post.dependency_depth,
-                pre_report.as_ref().map(|r| r.dependency_depth).unwrap_or(0),
-                pre_report.as_ref().map(|r| r.predicted_speedup).unwrap_or(1.0),
-                pre_report.as_ref().map(|r| r.dependency_depth as f64 / post.dependency_depth.max(1) as f64).unwrap_or(1.0),
-            );
-        }
-        balanced
-    } else {
-        dfg
-    };
+    if cli.entropy && cli.balance {
+        let post = ir::entropy::analyze_parallelism(&dfg);
+        eprintln!("[entropy]   after: depth={} (was {}) | predicted {:.2}x, actual depth reduction {:.2}x",
+            post.dependency_depth,
+            pre_report.as_ref().map(|r| r.dependency_depth).unwrap_or(0),
+            pre_report.as_ref().map(|r| r.predicted_speedup).unwrap_or(1.0),
+            pre_report.as_ref().map(|r| r.dependency_depth as f64 / post.dependency_depth.max(1) as f64).unwrap_or(1.0),
+        );
+    }
 
     let dfg = pipeline.run(dfg).unwrap_or_else(|e| {
         eprintln!("[pass]      FAILED: {e}");
@@ -322,6 +362,78 @@ fn main() {
         sched_kind,
         format!("✓  {:?}", t0.elapsed())
     );
+
+    // Phase 4.1: Memory port constraint check
+    if !scheduled.dfg.arrays.is_empty() {
+        let violations = schedule::mem_port::check_port_violations(
+            &scheduled.dfg, &scheduled.schedule, 2,
+        );
+        if !violations.is_empty() {
+            eprintln!("[memport]   WARNING: {} BRAM port violations", violations.len());
+            for v in &violations {
+                eprintln!("            array '{}' cycle {}: {} accesses (2 ports available)",
+                    v.array, v.cycle, v.ports_needed);
+            }
+        }
+    }
+
+    // Phase 4.2: Howard's max-plus eigenvalue for II
+    if cli.howard {
+        let result = schedule::howard::howard_max_cycle_mean( &scheduled.dfg );
+        eprintln!("[howard]    {}", schedule::howard::howard_report( &result ));
+    }
+
+    // Phase 4.25: Bjorklund non-integer II analysis
+    if cli.bjorklund {
+        let rc = schedule::ResourceConstraints {
+            max_adders:      cli.max_add,
+            max_multipliers: cli.max_mul,
+            max_shifters:    8,
+            max_comparators: 4,
+        };
+        let mut n_muls = 0u32;
+        let mut n_adds = 0u32;
+        for node in &scheduled.dfg.nodes {
+            match &node.op {
+                ir::DfgOp::Mul => n_muls += 1,
+                ir::DfgOp::Add | ir::DfgOp::Sub => n_adds += 1,
+                _ => {}
+            }
+        }
+        if n_muls > rc.max_multipliers {
+            let sched = schedule::bjorklund::bjorklund(rc.max_multipliers, n_muls);
+            eprintln!("[bjorklund] MUL: {}", schedule::bjorklund::bjorklund_report(&sched));
+        }
+        if n_adds > rc.max_adders {
+            let sched = schedule::bjorklund::bjorklund(rc.max_adders, n_adds);
+            eprintln!("[bjorklund] ADD: {}", schedule::bjorklund::bjorklund_report(&sched));
+        }
+        if n_muls <= rc.max_multipliers && n_adds <= rc.max_adders {
+            eprintln!("[bjorklund] no resource contention — integer II sufficient");
+        }
+    }
+
+    // Phase 4.3: Critical path analysis
+    if cli.critical_path {
+        let cp = ir::critical_path::critical_path_summary( &scheduled.dfg );
+        eprintln!("[crit]      {cp}");
+    }
+
+    // Phase 4.4: DSP inference
+    if cli.dsp {
+        let mappings = ir::dsp_infer::infer_dsp_patterns( &scheduled.dfg );
+        let report = ir::dsp_infer::dsp_utilization_report( &mappings );
+        eprintln!("[dsp]       {report}");
+    }
+
+    // Phase 4.45: Array partitioning
+    if cli.array_partition {
+        let plans = ir::array_partition::analyze_array_partitions( &scheduled.dfg );
+        if !plans.is_empty() {
+            eprintln!("[partition] {} arrays analyzed:", plans.len());
+            eprint!("{}", ir::array_partition::partition_report( &plans ));
+        }
+    }
 
     // Phase 4.5: Loop pipeline analysis
     if cli.pipeline_analysis {
@@ -378,12 +490,25 @@ fn main() {
 
     // Phase 6: Emit Verilog
     let t0 = Instant::now();
-    let verilog = if cli.pipeline {
+    let verilog = if cli.loop_pipeline {
+        let config = emit::loop_pipeline::LoopPipelineConfig {
+            ii: cli.ii,
+            trip_count: cli.trip_count,
+            param_trip: true,
+        };
+        emit::loop_pipeline::emit_loop_pipeline(&bound, &config)
+    } else if cli.pipeline {
         emit::pipeline::emit_pipelined(&bound)
     } else {
         emit::emit_verilog(&bound)
     };
-    let mode = if cli.pipeline { "pipelined II=1" } else { "FSM" };
+    let mode = if cli.loop_pipeline {
+        format!("loop pipeline II={} N={}", cli.ii, cli.trip_count)
+    } else if cli.pipeline {
+        "pipelined II=1".to_string()
+    } else {
+        "FSM".to_string()
+    };
     let v_lines = verilog.lines().count();
     fs::write(&out_path, &verilog).unwrap_or_else(|e| {
         eprintln!("[emit]      FAILED: {e}");
