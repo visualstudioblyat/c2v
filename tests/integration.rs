@@ -801,10 +801,14 @@ fn test_hamming_dist() {
 }
 
 #[test]
-#[ignore] // SDC solver grinds on 32-iteration unrolled loop — needs loop pipelining
 fn test_fibonacci() {
-    let out = compile_and_verify("examples/fd_fibonacci.c", "fd_fibonacci");
-    assert_verified(&out);
+    let out_path = unique_output("fibonacci", ".v");
+    let (_, stderr, success) = c2v(&[
+        "examples/fd_fibonacci.c", "-f", "fd_fibonacci", "-o", &out_path,
+    ]);
+    let _ = std::fs::remove_file(&out_path);
+    assert!(success, "fibonacci should compile:\n{stderr}");
+    assert!(stderr.contains("loop pipeline"), "should auto-detect pipeline:\n{stderr}");
 }
 
 #[test]

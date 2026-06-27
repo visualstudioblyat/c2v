@@ -490,10 +490,21 @@ fn main() {
 
     // Phase 6: Emit Verilog
     let t0 = Instant::now();
-    let verilog = if cli.loop_pipeline {
+    let auto_loop = !bound.scheduled.dfg.loop_trip_counts.is_empty() && !cli.loop_pipeline;
+    let use_loop_pipeline = cli.loop_pipeline || auto_loop;
+    let loop_trip = if auto_loop {
+        bound.scheduled.dfg.loop_trip_counts[0].1
+    } else {
+        cli.trip_count
+    };
+    if auto_loop {
+        let (ref name, count) = bound.scheduled.dfg.loop_trip_counts[0];
+        eprintln!("[auto]      loop '{}' ({} iterations) → pipeline mode", name, count);
+    }
+    let verilog = if use_loop_pipeline {
         let config = emit::loop_pipeline::LoopPipelineConfig {
             ii: cli.ii,
-            trip_count: cli.trip_count,
+            trip_count: loop_trip,
             param_trip: true,
         };
         emit::loop_pipeline::emit_loop_pipeline(&bound, &config)
@@ -502,8 +513,8 @@ fn main() {
     } else {
         emit::emit_verilog(&bound)
     };
-    let mode = if cli.loop_pipeline {
-        format!("loop pipeline II={} N={}", cli.ii, cli.trip_count)
+    let mode = if use_loop_pipeline {
+        format!("loop pipeline II={} N={}", cli.ii, loop_trip)
     } else if cli.pipeline {
         "pipelined II=1".to_string()
     } else {

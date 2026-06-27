@@ -59,6 +59,7 @@ pub struct Dfg {
     pub outputs: Vec<Port>,
     pub arrays: Vec<ArrayDecl>,
     pub structs: Vec<StructDef>,
+    pub loop_trip_counts: Vec<(String, u32)>,
 }
 
 #[derive(Debug, Clone, Serialize)]

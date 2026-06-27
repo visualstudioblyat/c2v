@@ -81,6 +81,7 @@ struct DfgBuilder<'a> {
     known_funcs: HashMap<String, FuncInfo>,
     inline_depth: u32,
     inline_return_id: Option<NodeId>,
+    loop_trip_counts: Vec<(String, u32)>,
 }
 
 impl<'a> DfgBuilder<'a> {
@@ -103,6 +104,7 @@ impl<'a> DfgBuilder<'a> {
             known_funcs: HashMap::new(),
             inline_depth: 0,
             inline_return_id: None,
+            loop_trip_counts: Vec::new(),
         }
     }
 
@@ -456,24 +458,43 @@ impl<'a> DfgBuilder<'a> {
             .ok_or(DfgBuildError::Unsupported(line, "non-constant loop bounds — unroll manually".to_string()))?;
 
         let iter_count = (start_val - end_val).unsigned_abs().max((end_val - start_val).unsigned_abs());
-        if iter_count > 1024 {
-            return Err(DfgBuildError::Unsupported(line, format!("loop too large to unroll: {iter_count} iterations")));
-        }
 
         let body = body.ok_or(DfgBuildError::Unsupported(line, "empty for body".to_string()))?;
 
-        let step: i64 = if start_val <= end_val { 1 } else { -1 };
-        let mut i = start_val;
-        loop {
-            if step > 0 && i >= end_val { break; }
-            if step < 0 && i < end_val { break; }
+        const UNROLL_THRESHOLD: u64 = 16;
+
+        if iter_count <= UNROLL_THRESHOLD {
+            let step: i64 = if start_val <= end_val { 1 } else { -1 };
+            let mut i = start_val;
+            loop {
+                if step > 0 && i >= end_val { break; }
+                if step < 0 && i < end_val { break; }
+                let const_id = self.add_node(
+                    DfgOp::Const(i as u64), 32, line,
+                    &format!("c_{i}"),
+                );
+                self.vars.insert(var_name.clone(), const_id);
+                self.build_statement(body, source)?;
+                i += step;
+            }
+            eprintln!("[loop]      unrolled {var_name} ({iter_count} iterations)");
+        } else {
+            eprintln!("[loop]      pipelining {var_name} ({iter_count} iterations, auto-detected)");
+            let vars_before = self.vars.clone();
             let const_id = self.add_node(
-                DfgOp::Const(i as u64), 32, line,
-                &format!("c_{i}"),
+                DfgOp::Const(0), 32, line, "iter",
             );
             self.vars.insert(var_name.clone(), const_id);
             self.build_statement(body, source)?;
-            i += step;
+            let vars_after = self.vars.clone();
+            for (name, &after_id) in &vars_after {
+                if let Some(&before_id) = vars_before.get(name) {
+                    if before_id != after_id && name != &var_name {
+                        eprintln!("[loop]        carried var: {name}");
+                    }
+                }
+            }
+            self.loop_trip_counts.push((var_name.clone(), iter_count as u32));
         }
 
         Ok(())
@@ -1344,6 +1365,7 @@ impl<'a> DfgBuilder<'a> {
             outputs: self.outputs,
             arrays,
             structs,
+            loop_trip_counts: self.loop_trip_counts,
         }
     }
 }
