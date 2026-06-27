@@ -982,3 +982,27 @@ fn test_ip_checksum() {
     let out = compile_and_verify("examples/fd_checksum_ip.c", "fd_ip_checksum");
     assert_verified(&out);
 }
+
+#[test]
+fn test_xxhash32() {
+    let out = compile_and_verify("examples/fd_xxhash32.c", "fd_xxh32_round");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_fnv1a() {
+    let out = compile_and_verify("examples/fd_fnv1a.c", "fd_fnv1a_4bytes");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_ipv4_route() {
+    let out = compile_and_verify("examples/fd_ipv4_route.c", "fd_route_lookup_4");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_bitfield_pack() {
+    let out = compile_and_verify("examples/fd_bitfield.c", "fd_pack_ipv4_hdr");
+    assert_verified(&out);
+}
