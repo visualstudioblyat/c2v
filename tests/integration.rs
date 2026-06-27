@@ -958,3 +958,27 @@ fn test_packet_parser() {
     let out = compile_and_verify("examples/fd_packet_parser.c", "fd_parse_eth_type");
     assert_verified(&out);
 }
+
+#[test]
+fn test_clz32() {
+    let out = compile_and_verify("examples/fd_leading_zeros.c", "fd_clz32");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_murmur3() {
+    let out = compile_and_verify("examples/fd_murmur3_mix.c", "fd_murmur3_fmix32");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_saturate() {
+    let out = compile_and_verify("examples/fd_saturate.c", "fd_clamp_u16");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_ip_checksum() {
+    let out = compile_and_verify("examples/fd_checksum_ip.c", "fd_ip_checksum");
+    assert_verified(&out);
+}
