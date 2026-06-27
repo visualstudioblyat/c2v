@@ -2,16 +2,12 @@ typedef unsigned int uint;
 
 uint
 fd_clz32( uint x ) {
-  uint n16 = (x >> 16) ? 0 : 16;
-  uint x16 = (x >> 16) ? (x >> 16) : x;
-  uint n8  = (x16 >> 8) ? 0 : 8;
-  uint x8  = (x16 >> 8) ? (x16 >> 8) : x16;
-  uint n4  = (x8 >> 4) ? 0 : 4;
-  uint x4  = (x8 >> 4) ? (x8 >> 4) : x8;
-  uint n2  = (x4 >> 2) ? 0 : 2;
-  uint x2  = (x4 >> 2) ? (x4 >> 2) : x4;
-  uint n1  = (x2 >> 1) ? 0 : 1;
-  uint x1  = (x2 >> 1) ? (x2 >> 1) : x2;
-  uint n0  = 1 - (x1 & 1);
-  return n16 + n8 + n4 + n2 + n1 + n0;
+  uint n = 32;
+  if( x & 0xFFFF0000 ) { n -= 16; x >>= 16; }
+  if( x & 0x0000FF00 ) { n -= 8;  x >>= 8;  }
+  if( x & 0x000000F0 ) { n -= 4;  x >>= 4;  }
+  if( x & 0x0000000C ) { n -= 2;  x >>= 2;  }
+  if( x & 0x00000002 ) { n -= 1;  x >>= 1;  }
+  if( x & 0x00000001 ) { n -= 1; }
+  return n;
 }
