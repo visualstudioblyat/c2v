@@ -22,7 +22,9 @@ impl Pass for WidthNarrowing {
         for edge in &dfg.edges {
             let consumer = &dfg.nodes[edge.to as usize];
             let cw = if matches!(&consumer.op,
-                DfgOp::Eq | DfgOp::Ne | DfgOp::Lt | DfgOp::Gt | DfgOp::Le | DfgOp::Ge)
+                DfgOp::Eq | DfgOp::Ne | DfgOp::Lt | DfgOp::Gt |
+                DfgOp::Le | DfgOp::Ge | DfgOp::Shl | DfgOp::Shr |
+                DfgOp::Mux)
             {
                 edge.width
             } else {

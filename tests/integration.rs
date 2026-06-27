@@ -928,3 +928,33 @@ fn test_array_partition() {
     let _ = std::fs::remove_file(&out_path);
     assert!(success, "c2v failed:\n{stderr}");
 }
+
+#[test]
+fn test_crc32() {
+    let out = compile_and_verify("examples/fd_crc32.c", "fd_crc32_byte");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_aes_mixcol() {
+    let out = compile_and_verify("examples/fd_aes_mixcol.c", "fd_aes_mix_column");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_rgb_to_yuv() {
+    let out = compile_and_verify("examples/fd_rgb_to_yuv.c", "fd_rgb_to_yuv");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_div10() {
+    let out = compile_and_verify("examples/fd_div_mod_10.c", "fd_div10");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_packet_parser() {
+    let out = compile_and_verify("examples/fd_packet_parser.c", "fd_parse_eth_type");
+    assert_verified(&out);
+}

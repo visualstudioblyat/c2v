@@ -1004,8 +1004,9 @@ impl<'a> DfgBuilder<'a> {
 
                 let is_comparison = matches!(op_text,
                     "==" | "!=" | "<" | ">" | "<=" | ">=" | "&&" | "||");
+                let is_shift = matches!(op_text, "<<" | ">>");
 
-                let operand_ctx = if is_comparison { 32 } else { ctx_width };
+                let operand_ctx = if is_comparison || is_shift { 32 } else { ctx_width };
                 let left_id = self.build_expr(left, source, operand_ctx)?;
                 let right_id = self.build_expr(right, source, operand_ctx)?;
 
