@@ -158,9 +158,13 @@ struct Cli {
     #[arg(long)]
     bjorklund_ii: Option<String>,
 
-    /// Generate BRAM-ported accelerator wrapper (input_name:output_name)
+    /// Generate BRAM-ported accelerator wrapper (input_name:+output_name)
     #[arg(long)]
     accel: Option<String>,
+
+    /// Generate streaming pipelined BRAM accelerator (input:output)
+    #[arg(long)]
+    stream: Option<String>,
 }
 
 fn main() {
@@ -568,7 +572,19 @@ fn main() {
             accel_path.display(), bram_ports.len(), format!("✓  {:?}", t0.elapsed()));
     }
 
-    // Phase 6.6: AXI-Stream wrapper
+    // Phase 6.6: Streaming pipelined BRAM accelerator
+    if let Some(ref stream_spec) = cli.stream {
+        let t0 = Instant::now();
+        let parts: Vec<&str> = stream_spec.split(':').collect();
+        let (inp, outp) = if parts.len() >= 2 { (parts[0], parts[1]) } else { ("input", "output") };
+        let stream_v = emit::streaming_accel::emit_streaming_accelerator(&bound, inp, outp);
+        let stream_path = out_path.with_extension("stream.v");
+        fs::write(&stream_path, &stream_v).unwrap();
+        eprintln!("[stream]    {} (II=1 pipelined BRAM){:>6}",
+            stream_path.display(), format!("✓  {:?}", t0.elapsed()));
+    }
+
+    // Phase 6.7: AXI-Stream wrapper
     if cli.axi {
         let t0 = Instant::now();
         let axi_wrapper = emit::axi_stream::emit_axi_stream_wrapper(&bound);
