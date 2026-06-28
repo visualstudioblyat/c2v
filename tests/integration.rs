@@ -1006,3 +1006,27 @@ fn test_bitfield_pack() {
     let out = compile_and_verify("examples/fd_bitfield.c", "fd_pack_ipv4_hdr");
     assert_verified(&out);
 }
+
+#[test]
+fn test_rs_syndrome() {
+    let out = compile_and_verify("examples/fd_reed_solomon_gf.c", "fd_rs_syndrome");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_mac_filter() {
+    let out = compile_and_verify("examples/fd_mac_filter.c", "fd_mac_filter_4");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_vlan_tag() {
+    let out = compile_and_verify("examples/fd_vlan_tag.c", "fd_vlan_push");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_priority_queue() {
+    let out = compile_and_verify("examples/fd_priority_queue.c", "fd_pq_insert_sorted4");
+    assert_verified(&out);
+}
