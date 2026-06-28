@@ -165,6 +165,10 @@ struct Cli {
     /// Generate streaming pipelined BRAM accelerator (input:output)
     #[arg(long)]
     stream: Option<String>,
+
+    /// Generate accumulating BRAM accelerator with forwarding (input:result)
+    #[arg(long)]
+    accum_stream: Option<String>,
 }
 
 fn main() {
@@ -584,7 +588,19 @@ fn main() {
             stream_path.display(), format!("✓  {:?}", t0.elapsed()));
     }
 
-    // Phase 6.7: AXI-Stream wrapper
+    // Phase 6.7: Accumulating BRAM accelerator
+    if let Some(ref accum_spec) = cli.accum_stream {
+        let t0 = Instant::now();
+        let parts: Vec<&str> = accum_spec.split(':').collect();
+        let (inp, outp) = if parts.len() >= 2 { (parts[0], parts[1]) } else { ("input", "result") };
+        let accum_v = emit::accum_stream::emit_accum_streaming(&bound, inp, outp);
+        let accum_path = out_path.with_extension("accum.v");
+        fs::write(&accum_path, &accum_v).unwrap();
+        eprintln!("[accum]     {} (II=1 forwarded accumulator){:>6}",
+            accum_path.display(), format!("✓  {:?}", t0.elapsed()));
+    }
+
+    // Phase 6.8: AXI-Stream wrapper
     if cli.axi {
         let t0 = Instant::now();
         let axi_wrapper = emit::axi_stream::emit_axi_stream_wrapper(&bound);
