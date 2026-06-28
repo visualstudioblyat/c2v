@@ -25,11 +25,12 @@ pub struct LoopPipelineConfig {
     pub ii:             u32,
     pub trip_count:     u32,
     pub param_trip:     bool,
+    pub bjorklund:      Option<(u32, u32)>,
 }
 
 impl Default for LoopPipelineConfig {
     fn default() -> Self {
-        Self { ii: 1, trip_count: 1024, param_trip: true }
+        Self { ii: 1, trip_count: 1024, param_trip: true, bjorklund: None }
     }
 }
 
@@ -93,8 +94,22 @@ pub fn emit_loop_pipeline( bound: &BoundDfg, config: &LoopPipelineConfig ) -> St
     writeln!( out, "    wire         feeding = (iter_count < {trip_param});" ).unwrap();
     writeln!( out ).unwrap();
 
-    /* II counter */
-    if ii > 1 {
+    /* II counter / Bjorklund pattern */
+    if let Some((k, n)) = config.bjorklund {
+        let sched = crate::schedule::bjorklund::bjorklund(k, n);
+        let pattern_len = sched.pattern.len();
+        let ptr_bits = (32 - (pattern_len as u32).leading_zeros()).max(1);
+        writeln!( out, "    // Bjorklund non-integer II: E({k},{n}) effective_II={:.2}", sched.effective_ii ).unwrap();
+        writeln!( out, "    // Pattern: {}", sched.pattern.iter().map(|b| if *b {'1'} else {'0'}).collect::<String>() ).unwrap();
+        write!( out, "    wire [{pb}:0] bjork_pattern [{pl}:0];", pb = 0, pl = pattern_len - 1 ).unwrap();
+        writeln!( out ).unwrap();
+        for (i, &b) in sched.pattern.iter().enumerate() {
+            writeln!( out, "    assign bjork_pattern[{i}] = 1'b{};", if b { 1 } else { 0 } ).unwrap();
+        }
+        writeln!( out, "    reg [{pb}:0] bjork_ptr;", pb = ptr_bits - 1 ).unwrap();
+        writeln!( out, "    wire         accept = bjork_pattern[bjork_ptr] && feeding;" ).unwrap();
+        writeln!( out ).unwrap();
+    } else if ii > 1 {
         let ii_bits = (32 - (ii - 1).leading_zeros()).max(1);
         writeln!( out, "    // II counter — new input every {ii} cycles" ).unwrap();
         writeln!( out, "    reg [{ib}:0] ii_counter;", ib = ii_bits - 1 ).unwrap();
@@ -140,7 +155,9 @@ pub fn emit_loop_pipeline( bound: &BoundDfg, config: &LoopPipelineConfig ) -> St
     writeln!( out, "            iter_count <= 0;" ).unwrap();
     writeln!( out, "            done       <= 1'b0;" ).unwrap();
     writeln!( out, "            idle       <= 1'b1;" ).unwrap();
-    if ii > 1 {
+    if config.bjorklund.is_some() {
+        writeln!( out, "            bjork_ptr  <= 0;" ).unwrap();
+    } else if ii > 1 {
         writeln!( out, "            ii_counter <= 0;" ).unwrap();
     }
     writeln!( out, "        end else begin" ).unwrap();
@@ -154,7 +171,9 @@ pub fn emit_loop_pipeline( bound: &BoundDfg, config: &LoopPipelineConfig ) -> St
     writeln!( out, "                        state      <= S_RUN;" ).unwrap();
     writeln!( out, "                        iter_count <= 0;" ).unwrap();
     writeln!( out, "                        idle       <= 1'b0;" ).unwrap();
-    if ii > 1 {
+    if config.bjorklund.is_some() {
+        writeln!( out, "                        bjork_ptr  <= 0;" ).unwrap();
+    } else if ii > 1 {
         writeln!( out, "                        ii_counter <= 0;" ).unwrap();
     }
     writeln!( out, "                    end" ).unwrap();
@@ -163,8 +182,12 @@ pub fn emit_loop_pipeline( bound: &BoundDfg, config: &LoopPipelineConfig ) -> St
     /* RUN */
     writeln!( out, "                S_RUN: begin" ).unwrap();
 
-    /* II counter */
-    if ii > 1 {
+    /* II counter / Bjorklund pointer */
+    if let Some((_, n)) = config.bjorklund {
+        writeln!( out, "                    if (bjork_ptr < {}) bjork_ptr <= bjork_ptr + 1;",
+            n - 1 ).unwrap();
+        writeln!( out, "                    else bjork_ptr <= 0;" ).unwrap();
+    } else if ii > 1 {
         writeln!( out, "                    if (ii_counter < {}) ii_counter <= ii_counter + 1;",
             ii - 1 ).unwrap();
         writeln!( out, "                    else ii_counter <= 0;" ).unwrap();

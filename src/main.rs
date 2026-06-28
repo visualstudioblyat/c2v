@@ -153,6 +153,10 @@ struct Cli {
     /// Initiation interval for loop pipeline (default 1)
     #[arg(long, default_value = "1")]
     ii: u32,
+
+    /// Use Bjorklund non-integer II: k resources, n operations (e.g. --bjorklund-ii 3,8)
+    #[arg(long)]
+    bjorklund_ii: Option<String>,
 }
 
 fn main() {
@@ -502,10 +506,21 @@ fn main() {
         eprintln!("[auto]      loop '{}' ({} iterations) → pipeline mode", name, count);
     }
     let verilog = if use_loop_pipeline {
+        let bjork = cli.bjorklund_ii.as_ref().and_then(|s| {
+            let parts: Vec<&str> = s.split(',').collect();
+            if parts.len() == 2 {
+                Some((parts[0].parse::<u32>().ok()?, parts[1].parse::<u32>().ok()?))
+            } else { None }
+        });
+        if let Some((k, n)) = bjork {
+            let sched = schedule::bjorklund::bjorklund(k, n);
+            eprintln!("[bjork]     non-integer II: {}", schedule::bjorklund::bjorklund_report(&sched));
+        }
         let config = emit::loop_pipeline::LoopPipelineConfig {
             ii: cli.ii,
             trip_count: loop_trip,
             param_trip: true,
+            bjorklund: bjork,
         };
         emit::loop_pipeline::emit_loop_pipeline(&bound, &config)
     } else if cli.pipeline {
