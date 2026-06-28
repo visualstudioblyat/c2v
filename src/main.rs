@@ -157,6 +157,10 @@ struct Cli {
     /// Use Bjorklund non-integer II: k resources, n operations (e.g. --bjorklund-ii 3,8)
     #[arg(long)]
     bjorklund_ii: Option<String>,
+
+    /// Generate BRAM-ported accelerator wrapper (input_name:output_name)
+    #[arg(long)]
+    accel: Option<String>,
 }
 
 fn main() {
@@ -542,7 +546,29 @@ fn main() {
     });
     eprintln!("[emit]      {} ({v_lines} lines, {mode}){:>6}", out_path.display(), format!("✓  {:?}", t0.elapsed()));
 
-    // Phase 6.5: AXI-Stream wrapper
+    // Phase 6.5: BRAM-ported accelerator wrapper
+    if let Some(ref accel_spec) = cli.accel {
+        let t0 = Instant::now();
+        let parts: Vec<&str> = accel_spec.split(':').collect();
+        let mut bram_ports = Vec::new();
+        for part in &parts {
+            let is_out = part.starts_with('+');
+            let name = if is_out { &part[1..] } else { *part };
+            bram_ports.push(emit::bram_port::BramPortSpec {
+                name: name.to_string(),
+                width: 32,
+                depth: 1024,
+                is_output: is_out,
+            });
+        }
+        let accel_v = emit::bram_port::emit_bram_wrapper(&bound, &bram_ports);
+        let accel_path = out_path.with_extension("accel.v");
+        fs::write(&accel_path, &accel_v).unwrap();
+        eprintln!("[accel]     {} ({} BRAM ports){:>10}",
+            accel_path.display(), bram_ports.len(), format!("✓  {:?}", t0.elapsed()));
+    }
+
+    // Phase 6.6: AXI-Stream wrapper
     if cli.axi {
         let t0 = Instant::now();
         let axi_wrapper = emit::axi_stream::emit_axi_stream_wrapper(&bound);
