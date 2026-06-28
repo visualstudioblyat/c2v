@@ -1030,3 +1030,21 @@ fn test_priority_queue() {
     let out = compile_and_verify("examples/fd_priority_queue.c", "fd_pq_insert_sorted4");
     assert_verified(&out);
 }
+
+#[test]
+fn test_signed_sign() {
+    let out = compile_and_verify("examples/fd_signed_ops.c", "fd_sign");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_signed_clamp() {
+    let out = compile_and_verify("examples/fd_signed_ops.c", "fd_clamp_signed");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_pid_controller() {
+    let out = compile_and_verify("examples/fd_pid_controller.c", "fd_pid_step");
+    assert_verified(&out);
+}
