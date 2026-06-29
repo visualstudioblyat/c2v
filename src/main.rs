@@ -3,6 +3,7 @@
 mod bench;
 mod bench_harness;
 mod bind;
+mod dse;
 mod debug;
 mod emit;
 mod errors;
@@ -169,6 +170,10 @@ struct Cli {
     /// Generate accumulating BRAM accelerator with forwarding (input:result)
     #[arg(long)]
     accum_stream: Option<String>,
+
+    /// Design space exploration: try N resource configurations (default 100)
+    #[arg(long)]
+    dse: Option<usize>,
 }
 
 fn main() {
@@ -356,6 +361,13 @@ fn main() {
         std::process::exit(1);
     });
     let n_ops = dfg.nodes.len();
+
+    // Phase 3.9: Design Space Exploration
+    if let Some(n_points) = cli.dse {
+        let n = n_points.max(1).min(1000);
+        let result = dse::explore_design_space(&dfg, n);
+        dse::print_dse_report(&result);
+    }
 
     // Phase 4: Schedule
     let t0 = Instant::now();
