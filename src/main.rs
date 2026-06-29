@@ -363,21 +363,30 @@ fn main() {
     let n_ops = dfg.nodes.len();
 
     // Phase 3.9: Design Space Exploration
-    if let Some(n_points) = cli.dse {
+    let dse_override = if let Some(n_points) = cli.dse {
         let n = n_points.max(1).min(1000);
         let result = dse::explore_design_space(&dfg, n);
         dse::print_dse_report(&result);
-    }
+        let bp = &result.points[result.best_product];
+        Some((bp.max_add, bp.max_mul, bp.max_shift, bp.graph_color))
+    } else {
+        None
+    };
 
     // Phase 4: Schedule
     let t0 = Instant::now();
+    let (eff_add, eff_mul, eff_shift, eff_gc) = if let Some((a, m, s, gc)) = dse_override {
+        (a, m, s, gc)
+    } else {
+        (cli.max_add, cli.max_mul, 8, cli.graph_color)
+    };
     let scheduled = if cli.asap {
         schedule::schedule_asap(dfg)
     } else {
         let rc = schedule::ResourceConstraints {
-            max_adders: cli.max_add,
-            max_multipliers: cli.max_mul,
-            max_shifters: 8,
+            max_adders: eff_add,
+            max_multipliers: eff_mul,
+            max_shifters: eff_shift,
             max_comparators: 4,
         };
         schedule::schedule_sdc(dfg, &rc)
@@ -494,12 +503,12 @@ fn main() {
 
     // Phase 5: Bind
     let t0 = Instant::now();
-    let bound = if cli.graph_color {
+    let bound = if eff_gc {
         bind::graph_color::bind_graph_coloring(scheduled)
     } else {
         bind::bind_greedy(scheduled)
     };
-    let bind_kind = if cli.graph_color { "graph-color" } else { "greedy" };
+    let bind_kind = if eff_gc { "graph-color" } else { "greedy" };
     let n_resources = bound.resources.len();
     eprintln!("[bind]      {n_resources} resources ({bind_kind}){:>14}", format!("✓  {:?}", t0.elapsed()));
 
