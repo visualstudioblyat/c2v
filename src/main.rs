@@ -609,6 +609,42 @@ fn main() {
             stream_path.display(), format!("✓  {:?}", t0.elapsed()));
     }
 
+    // Phase 6.65: Verify streaming accelerator
+    if cli.stream.is_some() {
+        let stream_path = out_path.with_extension("stream.v");
+        if stream_path.exists() {
+            let parts: Vec<&str> = cli.stream.as_ref().unwrap().split(':').collect();
+            let (inp, outp) = if parts.len() >= 2 { (parts[0], parts[1]) } else { ("input", "output") };
+            let tb = emit::accel_testbench::emit_accel_testbench(&bound, inp, outp, 16);
+            let tb_path = out_path.with_extension("stream.tb.v");
+            fs::write(&tb_path, &tb).unwrap();
+            let sim_bin = format!("/tmp/c2v_accel_{}", std::process::id());
+            let sim = std::process::Command::new("iverilog")
+                .args(["-o", &sim_bin, out_path.to_str().unwrap(), stream_path.to_str().unwrap(), tb_path.to_str().unwrap()])
+                .output();
+            match sim {
+                Ok(o) if o.status.success() => {
+                    let run = std::process::Command::new("vvp").arg(&sim_bin).output();
+                    if let Ok(r) = run {
+                        let stdout = String::from_utf8_lossy(&r.stdout);
+                        if stdout.contains("ACCEL PASS") {
+                            eprintln!("[accel-v]   {}", stdout.trim());
+                        } else {
+                            eprintln!("[accel-v]   {}", stdout.trim());
+                        }
+                    }
+                    let _ = fs::remove_file(&sim_bin);
+                }
+                Ok(o) => {
+                    let stderr = String::from_utf8_lossy(&o.stderr);
+                    eprintln!("[accel-v]   iverilog failed: {}", stderr.lines().next().unwrap_or(""));
+                }
+                _ => {}
+            }
+            let _ = fs::remove_file(&tb_path);
+        }
+    }
+
     // Phase 6.7: Accumulating BRAM accelerator
     if let Some(ref accum_spec) = cli.accum_stream {
         let t0 = Instant::now();

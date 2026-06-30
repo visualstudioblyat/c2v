@@ -56,13 +56,41 @@ pub fn emit_streaming_accelerator( bound: &BoundDfg, input_array: &str, output_a
         match &node.op {
             DfgOp::Input(_) | DfgOp::Const(_) | DfgOp::Output(_) | DfgOp::Nop => {}
             _ => {
-                if node.latency > 0 {
-                    if let Some(sig) = sig_names.get( &node.id ) {
-                        let wd = super::width_decl( node.width );
-                        let sign = if node.signed { "signed " } else { "" };
+                if let Some(sig) = sig_names.get( &node.id ) {
+                    let wd = super::width_decl( node.width );
+                    let sign = if node.signed { "signed " } else { "" };
+                    if node.latency > 0 {
                         writeln!( out, "    reg  {sign}{wd}{sig};" ).unwrap();
+                    } else {
+                        writeln!( out, "    wire {sign}{wd}{sig};" ).unwrap();
                     }
                 }
+            }
+        }
+    }
+    for node in &dfg.nodes {
+        if node.latency != 0 { continue; }
+        if matches!(&node.op, DfgOp::Input(_) | DfgOp::Const(_) | DfgOp::Output(_) | DfgOp::Nop) { continue; }
+        if let Some(sig) = sig_names.get(&node.id) {
+            let inputs = super::get_inputs(node.id, bound);
+            match &node.op {
+                DfgOp::Not if !inputs.is_empty() => {
+                    let a = pipe_operand(inputs[0], &sig_names, bound);
+                    writeln!(out, "    assign {sig} = ~{a};").unwrap();
+                }
+                DfgOp::Mux if inputs.len() >= 3 => {
+                    let c = pipe_operand(inputs[0], &sig_names, bound);
+                    let t = pipe_operand(inputs[1], &sig_names, bound);
+                    let f = pipe_operand(inputs[2], &sig_names, bound);
+                    writeln!(out, "    assign {sig} = {c} ? {t} : {f};").unwrap();
+                }
+                _ if super::verilog_binop(&node.op).is_some() && inputs.len() >= 2 => {
+                    let op = super::verilog_binop(&node.op).unwrap();
+                    let l = pipe_operand(inputs[0], &sig_names, bound);
+                    let r = pipe_operand(inputs[1], &sig_names, bound);
+                    writeln!(out, "    assign {sig} = {l} {op} {r};").unwrap();
+                }
+                _ => {}
             }
         }
     }

@@ -1,3 +1,4 @@
+pub mod accel_testbench;
 pub mod accum_stream;
 pub mod avalon_st;
 pub mod axi4_lite;
