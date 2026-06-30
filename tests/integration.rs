@@ -1048,3 +1048,27 @@ fn test_pid_controller() {
     let out = compile_and_verify("examples/fd_pid_controller.c", "fd_pid_step");
     assert_verified(&out);
 }
+
+#[test]
+fn test_two_stage() {
+    let out = compile_and_verify("examples/fd_two_stage.c", "fd_two_stage");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_rgb565_pack() {
+    let out = compile_and_verify("examples/fd_mixed_width.c", "fd_rgb565_pack");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_byte_reverse() {
+    let out = compile_and_verify("examples/fd_byte_swap.c", "fd_byte_reverse");
+    assert_verified(&out);
+}
+
+#[test]
+fn test_alpha_blend() {
+    let out = compile_and_verify("examples/fd_pixel_blend.c", "fd_alpha_blend");
+    assert_verified(&out);
+}
